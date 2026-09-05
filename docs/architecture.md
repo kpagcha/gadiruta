@@ -22,18 +22,22 @@ The frontend must never depend directly on CTAN's API shape.
 
 ## Repository layout
 
-Initial intended structure:
+Current structure (the Django scaffold remains at the repository root):
 
 ```text
 gadiruta/
     AGENTS.md
     README.md
-    backend/
-    frontend/
+    manage.py
+    pyproject.toml
+    uv.lock
+    gadiruta/        # Django settings, root API, and URL configuration
+    tests/
     docs/
 ```
 
-Backend and frontend should be independently runnable but versioned together.
+The future React application will live in `frontend/`. Backend and frontend will be independently
+runnable but versioned together. A move to `backend/` is unnecessary for the first slices.
 
 ---
 
@@ -48,21 +52,23 @@ Stack:
 - httpx.
 - pytest / pytest-django.
 
-Suggested organization:
+The root `gadiruta/api.py` owns the versioned Ninja API and application liveness endpoint. Runtime
+configuration comes from the environment and uses PostgreSQL; the default timezone is Europe/Madrid
+with Django timezone support enabled. Transport modules will be added as behavior is implemented.
+
+Suggested future transport organization at the repository root:
 
 ```text
-backend/
-    config/
-    transport/
-        api.py
-        schemas.py
-        services/
-            journey_search.py
-        integrations/
-            ctan/
-                client.py
-                schemas.py
-                adapters.py
+transport/
+    api.py
+    schemas.py
+    services/
+        journey_search.py
+    integrations/
+        ctan/
+            client.py
+            schemas.py
+            adapters.py
 ```
 
 Responsibilities:
@@ -135,7 +141,8 @@ Responsibilities:
 
 ## API boundary
 
-The frontend calls Gadiruta's Django API.
+The frontend calls Gadiruta's Django API, mounted at `/api/v1/`. Only application liveness is
+implemented so far; it deliberately does not contact a database or upstream provider.
 
 Potential initial endpoints:
 

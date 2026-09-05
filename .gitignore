@@ -4,6 +4,13 @@ __pycache__/
 *.sqlite3
 .venv/
 .env
+.env.*
+!.env.example
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
 # Django
 staticfiles/
 # PyCharm

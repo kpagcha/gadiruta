@@ -8,6 +8,21 @@ Do not use this file as a development diary. Git history records implementation 
 
 ---
 
+## Backend foundation
+
+Status: Implemented
+
+- [x] Existing Django project configured for PostgreSQL and environment-based settings.
+- [x] Versioned Django Ninja API with typed application liveness response.
+- [x] Generated OpenAPI schema and interactive API documentation.
+- [x] Locked dependencies, pytest, Ruff lint/format checks, and mypy type checks.
+
+Transport integration and the React frontend are not implemented yet. The next milestone is to
+verify CTAN population-centre responses, save representative fixtures, and expose normalized place
+search through the API.
+
+---
+
 ## Journey search
 
 Status: Planned
@@ -145,7 +160,10 @@ Status: Out of MVP
 
 ## API
 
-Status: Planned
+Status: Foundation implemented; transport resources planned
+
+The versioned API currently exposes application liveness and generated documentation. Liveness
+does not imply PostgreSQL or CTAN availability. See `docs/development.md` for local URLs.
 
 Potential resources:
 

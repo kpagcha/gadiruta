@@ -8,58 +8,88 @@ Update commands and setup instructions whenever tooling changes.
 
 ## Repository
 
-Expected layout:
+Current layout:
 
 ```text
 gadiruta/
     AGENTS.md
     README.md
-    backend/
-    frontend/
+    manage.py
+    pyproject.toml
+    uv.lock
+    gadiruta/
+    tests/
     docs/
 ```
+
+The existing Django project stays at the repository root. `frontend/` is planned.
 
 ---
 
 ## Prerequisites
 
-Initial expected prerequisites:
+Backend prerequisites:
 
 - Git.
-- Python version compatible with Django 6.1.1.
-- PostgreSQL.
-- Node.js suitable for React 19 / current Vite.
-- npm, pnpm, or another explicitly selected package manager.
+- Python 3.14 (verified with 3.14.0).
+- uv (verified with 0.10.12) for dependencies, the lockfile, and command execution.
+- PostgreSQL 15 or newer, as required by
+  [Django 6.1](https://docs.djangoproject.com/en/6.1/ref/databases/#postgresql-notes).
 
-Record exact supported versions once the project is bootstrapped.
+Node.js and a frontend package manager will be selected when React is initialized.
 
 ---
 
 ## Backend
 
-Stack:
+Run all commands from the repository root. `uv.lock` records exact dependency versions; Django
+is pinned to 6.1.1. httpx will be introduced with the CTAN adapter.
 
-- Django 6.1.1.
-- Django Ninja.
-- PostgreSQL.
-- httpx.
-- pytest.
-- pytest-django.
-
-Document exact setup commands after backend initialization.
-
-Expected topics:
-
-```text
-Create virtual environment
-Install dependencies
-Configure environment variables
-Create PostgreSQL database
-Run migrations
-Start Django development server
-Run backend tests
-Run lint/format checks
+```powershell
+uv sync --locked
+Copy-Item .env.example .env
+uv run python -c 'import secrets; print(secrets.token_urlsafe(50))'
 ```
+
+Put the generated key in `.env` as `DJANGO_SECRET_KEY`, and configure the PostgreSQL connection
+below. Copy the example only when creating a new `.env`; preserve any existing local configuration.
+
+```powershell
+uv run --locked --env-file .env python manage.py migrate
+uv run --locked --env-file .env python manage.py runserver
+```
+
+The server defaults to http://127.0.0.1:8000. The homepage/React UI is not implemented yet.
+The liveness API itself does not require a database connection. Django's normal `runserver`
+migration check and the scaffold's admin require a configured database.
+
+### Checks and tests
+
+```powershell
+uv run --locked --env-file .env.example python manage.py check
+uv run --locked pytest
+uv run --locked ruff check .
+uv run --locked ruff format --check .
+uv run --locked mypy
+```
+
+The foundation tests run without an environment file, PostgreSQL connection, or CTAN access.
+[`pytest-env`](https://github.com/pytest-dev/pytest-env) supplies the test-only secret key and debug
+setting from `pyproject.toml` before Django initializes. These two values override inherited
+environment values during pytest runs only. Normal application startup still requires a configured
+`DJANGO_SECRET_KEY`.
+
+In PyCharm, select the project's `.venv` interpreter and use the pytest runner with the repository
+root as the working directory. Individual test modules can run directly without extra environment
+variables or runner arguments. Run `uv sync --locked` after dependency changes.
+
+Database access in pytest requires an explicit `django_db` marker or `db` fixture; future database
+tests must use PostgreSQL and a role that can create the test database. Supply the database
+connection with `uv run --locked --env-file .env pytest` when running those tests.
+
+Ruff handles linting, import ordering, and formatting. Use `uv run ruff format .` to format source.
+mypy checks project code, including typed function bodies; untyped third-party imports are allowed
+until more specific stubs are needed.
 
 ---
 
@@ -91,35 +121,49 @@ Build production bundle
 
 ## Environment variables
 
-Do not commit `.env` files or secrets.
+Do not commit `.env` files or secrets. `.env.example` contains placeholders for local development.
+Settings read the process environment; `.env` is loaded only when explicitly passed to
+`uv run --env-file`. Existing process environment values take precedence.
 
-Provide an example environment file when configuration is introduced, for example:
+| Variable | Default / behavior |
+| --- | --- |
+| `DJANGO_SECRET_KEY` | Required; startup fails if missing or blank. |
+| `DJANGO_DEBUG` | `false`; accepts `true` or `false`, ignoring case/outer whitespace. |
+| `DJANGO_ALLOWED_HOSTS` | `localhost,127.0.0.1,[::1]`; comma-separated, blank entries ignored. |
+| `POSTGRES_DB` | `gadiruta` |
+| `POSTGRES_USER` | `gadiruta` |
+| `POSTGRES_PASSWORD` | Empty; set for the configured database role. |
+| `POSTGRES_HOST` | `localhost` |
+| `POSTGRES_PORT` | `5432` |
 
-```text
-.env.example
-```
-
-Document every required variable here.
-
-Likely categories:
-
-- Django secret/config.
-- PostgreSQL connection.
-- Allowed hosts / CORS configuration.
-- CTAN integration configuration if required.
+The example explicitly enables debug mode. It is not production configuration. Set the real
+deployment hosts, secret, and HTTPS settings before deployment. No CORS or CTAN settings exist yet.
 
 ---
 
 ## Database
 
-Use PostgreSQL.
+Use a supported PostgreSQL server and its command-line tools. For a new local development database,
+run these against that server with an administrative role (often `postgres`):
 
-Document:
+```powershell
+createuser -h localhost -p 5432 -U postgres --pwprompt --createdb gadiruta
+createdb -h localhost -p 5432 -U postgres --owner=gadiruta gadiruta
+```
 
-- Local database creation.
-- Connection configuration.
-- Migration commands.
-- Reset/reseed instructions if fixtures or sync data are introduced.
+Match the port to the supported server, particularly if an older PostgreSQL service is also running.
+Set `POSTGRES_PASSWORD` in `.env` to the role password, then run the migrations shown above. The
+`--createdb` privilege is for local test database creation, not a production-role requirement.
+
+To check database connectivity and applied migrations:
+
+```powershell
+uv run --locked --env-file .env python manage.py check --database default
+uv run --locked --env-file .env python manage.py migrate --check
+```
+
+No transport models or synchronization commands exist yet. The original local SQLite file is not
+used by the new configuration and is not automatically removed or migrated.
 
 Do not commit local database files/dumps unless they are intentional test fixtures.
 
@@ -132,7 +176,7 @@ Normal automated tests must not depend on live CTAN availability.
 Representative upstream responses should live under something similar to:
 
 ```text
-backend/tests/fixtures/ctan/
+tests/fixtures/ctan/
 ```
 
 When adding a fixture:
@@ -158,7 +202,12 @@ When adding or changing an endpoint:
 - Add docstrings/descriptions where they improve generated docs.
 - Do not manually duplicate the full endpoint contract under `docs/`.
 
-Document the local OpenAPI/docs URL here after backend routing is initialized.
+- Interactive docs: http://127.0.0.1:8000/api/v1/docs
+- OpenAPI JSON: http://127.0.0.1:8000/api/v1/openapi.json
+- Application liveness: http://127.0.0.1:8000/api/v1/health
+
+Interactive documentation assets are supplied by the installed Ninja package through Django static
+files. Development serving requires `DJANGO_DEBUG=true`; production will need static-file hosting.
 
 ---
 
