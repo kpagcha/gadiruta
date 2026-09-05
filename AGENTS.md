@@ -180,6 +180,11 @@ Use typed Django Ninja schemas and generated OpenAPI documentation as the canoni
 
 Normal automated tests must not depend on the live CTAN API. Prefer representative saved fixtures.
 
+Every Python module, class, function, and method must have a meaningful English docstring. This
+includes package initializers, tests, fixtures, helpers, private and nested definitions, constructors,
+and other special methods. Describe purpose, behavior, and important constraints rather than merely
+repeating the name. Keep docstrings published through OpenAPI written for API consumers.
+
 ## Frontend conventions
 
 Frontend stack:

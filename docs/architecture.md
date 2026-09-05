@@ -32,6 +32,7 @@ gadiruta/
     pyproject.toml
     uv.lock
     gadiruta/        # Django settings, root API, and URL configuration
+    transport/       # Public transport API, services, and CTAN integration
     tests/
     docs/
 ```
@@ -54,16 +55,17 @@ Stack:
 
 The root `gadiruta/api.py` owns the versioned Ninja API and application liveness endpoint. Runtime
 configuration comes from the environment and uses PostgreSQL; the default timezone is Europe/Madrid
-with Django timezone support enabled. Transport modules will be added as behavior is implemented.
+with Django timezone support enabled. The root API mounts the transport place-search router.
 
-Suggested future transport organization at the repository root:
+Implemented transport organization at the repository root:
 
 ```text
 transport/
     api.py
     schemas.py
+    domain.py
     services/
-        journey_search.py
+        places.py
     integrations/
         ctan/
             client.py
@@ -94,6 +96,12 @@ Responsibilities:
 - Isolate CTAN-specific identifiers and quirks.
 
 Raw CTAN payloads must not become Gadiruta's public API contract.
+
+The HTTP client validates provider records with Pydantic. The adapter produces immutable domain
+values with separate provider references and public Gadiruta IDs. Place search joins municipality
+names, caches the normalized catalogue, and performs local accent-insensitive matching and ranking.
+The API explicitly selects public fields; upstream identifiers and zone fields remain internal.
+The transport package has no Django models or migrations yet.
 
 ---
 
@@ -141,29 +149,26 @@ Responsibilities:
 
 ## API boundary
 
-The frontend calls Gadiruta's Django API, mounted at `/api/v1/`. Only application liveness is
-implemented so far; it deliberately does not contact a database or upstream provider.
-
-Potential initial endpoints:
-
-```text
-GET /api/v1/places?q=
-GET /api/v1/journeys/direct
-GET /api/v1/lines
-GET /api/v1/lines/{id}
-GET /api/v1/lines/{id}/schedule
-GET /api/v1/stops/{id}
-GET /api/v1/stops/{id}/departures
-GET /api/v1/alerts
-```
-
-These are provisional until CTAN discovery verifies the required mappings.
+The frontend calls Gadiruta's Django API, mounted at `/api/v1/`. Application liveness deliberately
+does not contact a database or upstream provider. Place search uses the CTAN adapter on cache
+misses and does not require a database. The remaining resource plans are in `docs/features.md`.
 
 Django Ninja/OpenAPI is the canonical endpoint-level reference.
 
 ---
 
 ## Persistence and caching
+
+The initial population-centre catalogue uses Django's default local-memory cache with a one-hour
+TTL, shared across search queries within each process. The timestamp reflects the completed fetch,
+not the upstream publication time. A valid empty catalogue is cacheable; failures are not. Invalid
+individual records are skipped, but a nonempty response containing no usable records is an error.
+An unexpired catalogue can serve requests during provider outages. There is no stale-on-error
+fallback after expiry, background refresh, or shared multi-worker cache yet. Concurrent cold
+requests can perform duplicate fetches.
+
+Public place IDs use deterministic UUIDs derived from scoped provider identity, independently of
+display names and catalogue order; see `docs/decisions.md`. No transport data is persisted yet.
 
 PostgreSQL may hold normalized or cached provider data.
 

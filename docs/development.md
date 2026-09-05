@@ -18,6 +18,7 @@ gadiruta/
     pyproject.toml
     uv.lock
     gadiruta/
+    transport/
     tests/
     docs/
 ```
@@ -43,7 +44,7 @@ Node.js and a frontend package manager will be selected when React is initialize
 ## Backend
 
 Run all commands from the repository root. `uv.lock` records exact dependency versions; Django
-is pinned to 6.1.1. httpx will be introduced with the CTAN adapter.
+is pinned to 6.1.1. The CTAN adapter uses httpx and Pydantic.
 
 ```powershell
 uv sync --locked
@@ -60,7 +61,7 @@ uv run --locked --env-file .env python manage.py runserver
 ```
 
 The server defaults to http://127.0.0.1:8000. The homepage/React UI is not implemented yet.
-The liveness API itself does not require a database connection. Django's normal `runserver`
+The liveness and place-search APIs do not require a database connection. Django's normal `runserver`
 migration check and the scaffold's admin require a configured database.
 
 ### Checks and tests
@@ -73,7 +74,7 @@ uv run --locked ruff format --check .
 uv run --locked mypy
 ```
 
-The foundation tests run without an environment file, PostgreSQL connection, or CTAN access.
+The current tests run without an environment file, PostgreSQL connection, or CTAN access.
 [`pytest-env`](https://github.com/pytest-dev/pytest-env) supplies the test-only secret key and debug
 setting from `pyproject.toml` before Django initializes. These two values override inherited
 environment values during pytest runs only. Normal application startup still requires a configured
@@ -81,7 +82,9 @@ environment values during pytest runs only. Normal application startup still req
 
 In PyCharm, select the project's `.venv` interpreter and use the pytest runner with the repository
 root as the working directory. Individual test modules can run directly without extra environment
-variables or runner arguments. Run `uv sync --locked` after dependency changes.
+variables or runner arguments. If Django support is enabled, enable **Do not use Django test
+runner** and create/select a pytest run configuration; existing Django test configurations still
+use Django's runner and bypass pytest configuration. Run `uv sync --locked` after dependency changes.
 
 Database access in pytest requires an explicit `django_db` marker or `db` fixture; future database
 tests must use PostgreSQL and a role that can create the test database. Supply the database
@@ -90,6 +93,14 @@ connection with `uv run --locked --env-file .env pytest` when running those test
 Ruff handles linting, import ordering, and formatting. Use `uv run ruff format .` to format source.
 mypy checks project code, including typed function bodies; untyped third-party imports are allowed
 until more specific stubs are needed.
+
+### Python docstrings
+
+Docstrings are mandatory for every Python module (including `__init__.py`), class, named function,
+and method. Tests, fixtures, helpers, private/nested definitions, constructors, and special methods
+are not exempt. Use English and explain the purpose or behavioral contract; include important
+side effects, failure modes, or constraints when they are not obvious from the signature. Test
+docstrings should explain the scenario and expected outcome.
 
 ---
 
@@ -137,7 +148,9 @@ Settings read the process environment; `.env` is loaded only when explicitly pas
 | `POSTGRES_PORT` | `5432` |
 
 The example explicitly enables debug mode. It is not production configuration. Set the real
-deployment hosts, secret, and HTTPS settings before deployment. No CORS or CTAN settings exist yet.
+deployment hosts, secret, and HTTPS settings before deployment. No CORS settings exist yet. CTAN
+requests use the fixed HTTPS API base and consortium `2`; no API key or additional environment
+variables are needed for place search.
 
 ---
 
@@ -173,11 +186,15 @@ Do not commit local database files/dumps unless they are intentional test fixtur
 
 Normal automated tests must not depend on live CTAN availability.
 
-Representative upstream responses should live under something similar to:
+Representative upstream responses live under:
 
 ```text
 tests/fixtures/ctan/
 ```
+
+The fixture README and `metadata.json` record provenance. Tests use `httpx.MockTransport` and the
+default test fixture rejects live HTTPX transport calls. Cache tests isolate the place-catalogue
+key; they do not require PostgreSQL or an external cache service.
 
 When adding a fixture:
 
@@ -199,12 +216,18 @@ When adding or changing an endpoint:
 
 - Use typed request/response schemas.
 - Keep route descriptions accurate.
-- Add docstrings/descriptions where they improve generated docs.
+- Write public descriptions for API consumers; keep internal implementation and dependency details
+  in developer documentation or code comments.
+- Keep required route and schema docstrings useful as generated API descriptions.
 - Do not manually duplicate the full endpoint contract under `docs/`.
 
 - Interactive docs: http://127.0.0.1:8000/api/v1/docs
 - OpenAPI JSON: http://127.0.0.1:8000/api/v1/openapi.json
 - Application liveness: http://127.0.0.1:8000/api/v1/health
+- Place-search example: http://127.0.0.1:8000/api/v1/places?q=cadiz
+
+The place-search example contacts live CTAN on a cache miss. Query behavior and response fields
+are documented in OpenAPI. The cache is process-local and resets when that process restarts.
 
 Interactive documentation assets are supplied by the installed Ninja package through Django static
 files. Development serving requires `DJANGO_DEBUG=true`; production will need static-file hosting.

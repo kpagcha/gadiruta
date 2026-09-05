@@ -2,7 +2,13 @@
 
 Primary documentation:
 
-https://api.ctan.es/doc/
+[CTAN API documentation](https://api.ctan.es/doc/). Its generated definitions are in
+[`api_data.js`](https://api.ctan.es/doc/api_data.js) and
+[`api_project.js`](https://api.ctan.es/doc/api_project.js).
+
+The documentation metadata reports version `1.0.0`, generated on 2020-02-14, and an HTTP base URL.
+Live discovery on 2026-09-05 verified HTTPS at `https://api.ctan.es/v1`; Gadiruta uses HTTPS.
+Documented examples are not sufficient evidence of current response behavior.
 
 Cádiz uses the Bahía de Cádiz consortium (`2`).
 
@@ -47,7 +53,10 @@ Document the following as the API is explored:
 consortium_id = 2
 ```
 
-Status: Known from initial project research.
+Status: Location and municipality lists for consortium `2` verified live on 2026-09-05.
+
+The documented `/Consorcios/2/consorcio` detail URL returned HTTP 404 with an HTML body. The
+place-search integration does not depend on that resource.
 
 ---
 
@@ -72,7 +81,13 @@ them.
 
 ## Direct journey search
 
-Status: To investigate.
+Status: Documentation inspected; live behavior and calendar semantics still unverified.
+
+The documented candidate is `/Consorcios/:idConsorcio/horarios_origen_destino`, described as
+services between population centres, not arbitrary street addresses or physical stops. Its example
+uses `origen=1&destino=46&lang=ES`, while its parameter table calls the IDs `idNucleoOrigen` and
+`idNucleoDestino`. No date parameter appears in that table. Exercise real requests and save
+fixtures before choosing parameters, interpreting calendars, or implementing direct services.
 
 Questions to answer:
 
@@ -86,24 +101,51 @@ Questions to answer:
 - Does it cover all Cádiz-area modes represented by CTAN?
 - What happens when no direct service exists?
 
-Record verified request/response examples here once discovered.
+No live journey response has been captured yet.
 
 ---
 
 ## Locations / population centres
 
-Status: To investigate.
+Status: Catalogue and municipality relationship verified live on 2026-09-05.
 
-Questions:
+Paths below are relative to `https://api.ctan.es/v1/Consorcios/2/`.
 
-- Endpoint.
-- Search/filter parameters.
-- Identifier stability.
-- Display name fields.
-- Municipality relationship.
-- Coordinates.
-- Language/localized fields.
-- Distinction between population centre and physical stop.
+| GET path | Observed body | Records |
+| --- | --- | --- |
+| `nucleos` | Object with a `nucleos` array | 37 |
+| `municipios/` | Object with a `municipios` array | 12 |
+| `municipios/6/nucleos` | Object with a `nucleos` array | 10 |
+| `municipios/999999/nucleos` | `{"nucleos": []}` | 0 |
+
+All four returned HTTP 200 and JSON. No search text or pagination parameters are documented for
+these lists. The implementation fetches the small catalogue and searches it locally.
+
+Population-centre fields observed:
+
+- `idNucleo`: positive numeric identifier represented as a string.
+- `nombre`: display name, including accented names such as `Cádiz`.
+- `idMunicipio`: municipality identifier, also a numeric string.
+- `idZona`: letter-valued zone, such as `A` or `K`, not a numeric identifier.
+
+Municipality records use `idMunicipio` for the ID and `datos` for the display name. All municipality
+references in the captured centre list resolve against the municipality list. Centre `1` is Cádiz
+in municipality `1`; centre `42` is Aeropuerto in municipality `6` (Jerez de la Frontera), zone `K`.
+The centre named `Jerez` is not labelled identically to its municipality. Display spelling can
+also differ: `Sanlúcar de Barrameda` in the centre list, `Sanlucar de Barrameda` in municipalities.
+
+The catalogue includes centres sharing part of a name, such as Costa Ballena entries in different
+municipalities. Names must not define identity. CTAN documents population centres (`nucleos`) and
+physical stops (`paradas`) as separate resources; this capture does not establish physical-stop
+relationships.
+
+No coordinates or translated-name fields were present in these lists. Requests for
+`nucleos?lang=EN` and `nucleos?lang=ES` returned identical bodies to the unqualified list; language
+support for other endpoints is not established by this observation. Preserve provider names.
+
+Still unverified: identifier stability across upstream changes, refresh frequency, physical-stop
+relationships, and alternative sources of centre coordinates. Missing fields and inconsistent
+records in the resilience tests are synthetic; they were not observed in this success capture.
 
 ---
 
@@ -214,7 +256,18 @@ Future route planning may depend on this feed.
 
 ## Error handling
 
-Record verified behavior for:
+Observed on 2026-09-05:
+
+- `/Consorcios/2/nucleos/0` returned HTTP 400 with a JSON `error` stating that the identifier must
+  be greater than zero. The documentation's error example uses 404 instead.
+- `/Consorcios/2/municipios/999999/nucleos` returned HTTP 200 with an empty list, not an error.
+- `/Consorcios/2/consorcio` returned HTTP 404 with HTML rather than JSON.
+
+These statuses are endpoint-specific observations, not a universal CTAN error contract. Live
+rate limits, server failures, timeouts, and malformed catalogue responses remain unverified.
+Automated tests simulate them behind the HTTP adapter.
+
+Continue investigating:
 
 - Invalid parameters.
 - Unknown identifiers.
@@ -230,13 +283,15 @@ Gadiruta must normalize upstream failures into stable application behavior.
 
 ## Fixtures
 
-Representative API responses should be stored under something similar to:
+Representative captured response bodies and request metadata are stored under:
 
 ```text
-backend/tests/fixtures/ctan/
+tests/fixtures/ctan/
 ```
 
-Normal tests should use fixtures rather than contacting CTAN live.
+See the fixture README and `metadata.json` for exact request URLs, retrieval times, statuses, and
+the distinction between observed responses and synthetic test cases. Normal tests use fixtures
+rather than contacting CTAN live.
 
 Capture representative cases for:
 

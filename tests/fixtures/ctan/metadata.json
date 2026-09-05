@@ -1,0 +1,37 @@
+[
+  {
+    "file": "nucleos.json",
+    "url": "https://api.ctan.es/v1/Consorcios/2/nucleos",
+    "status": 200,
+    "retrieved_at": "2026-09-05T09:13:21.9441532Z",
+    "content_type": "application/json"
+  },
+  {
+    "file": "municipios.json",
+    "url": "https://api.ctan.es/v1/Consorcios/2/municipios/",
+    "status": 200,
+    "retrieved_at": "2026-09-05T09:13:22.3345133Z",
+    "content_type": "application/json"
+  },
+  {
+    "file": "consorcio_not_found.html",
+    "url": "https://api.ctan.es/v1/Consorcios/2/consorcio",
+    "status": 404,
+    "retrieved_at": "2026-09-05T09:13:22.5402504Z",
+    "content_type": "text/html; charset=UTF-8"
+  },
+  {
+    "file": "nucleos_empty.json",
+    "url": "https://api.ctan.es/v1/Consorcios/2/municipios/999999/nucleos",
+    "status": 200,
+    "retrieved_at": "2026-09-05T09:18:06.7755463Z",
+    "content_type": "application/json"
+  },
+  {
+    "file": "nucleo_invalid_id.json",
+    "url": "https://api.ctan.es/v1/Consorcios/2/nucleos/0",
+    "status": 400,
+    "retrieved_at": "2026-09-05T09:18:07.1964676Z",
+    "content_type": "application/json"
+  }
+]

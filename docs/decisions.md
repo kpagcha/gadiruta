@@ -155,3 +155,33 @@ Consequences:
 
 - Preserve geographic data when available.
 - Add map visualization in a later phase.
+
+---
+
+## 2026-09-05 — Cached population-centre catalogue with stable public IDs
+
+Context:
+
+The verified Cádiz catalogue is small (37 centres and 12 municipalities), and the location list
+does not document free-text search. The first API slice needs autocomplete without introducing
+database synchronization or exposing raw provider identifiers.
+
+Decision:
+
+Fetch and normalize the catalogue on demand, search it locally, and cache it for one hour using
+Django's cache API. Start with the default per-process local-memory backend. The TTL is an
+application policy, not a verified CTAN refresh interval.
+
+Use UUIDv5 with `uuid.NAMESPACE_URL` and the name
+`urn:gadiruta:place:ctan:2:population-centre:{canonical_upstream_id}` for public place IDs. The
+canonical upstream ID is its positive decimal representation without leading zeroes. Retain
+provider, consortium, and upstream identifiers separately in the internal domain model.
+
+Consequences:
+
+- No new database tables, synchronization jobs, or cache infrastructure for this slice.
+- IDs survive cache refreshes, name changes, and record reordering; future persistence must retain
+  these public IDs or explicitly migrate consumers. Upstream ID reassignment remains unverified.
+- Cache contents are not shared across workers or preserved across process restarts. A production
+  caching/synchronization strategy will need review before deployment.
+- The first places resource represents population centres only, not physical stops.

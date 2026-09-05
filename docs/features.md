@@ -17,9 +17,9 @@ Status: Implemented
 - [x] Generated OpenAPI schema and interactive API documentation.
 - [x] Locked dependencies, pytest, Ruff lint/format checks, and mypy type checks.
 
-Transport integration and the React frontend are not implemented yet. The next milestone is to
-verify CTAN population-centre responses, save representative fixtures, and expose normalized place
-search through the API.
+The CTAN place-search backend is implemented; the React frontend is not. The next small milestone
+is an English/Spanish origin and destination autocomplete consuming this API. Direct-service lookup
+still requires upstream timetable/calendar discovery before implementation.
 
 ---
 
@@ -64,8 +64,13 @@ Status: Planned
 
 ## Stops / locations
 
-Status: Planned
+Status: Population-centre search API implemented; UI and physical stops planned
 
+- [x] Search Cádiz population centres by name or municipality, ignoring case and accents.
+- [x] Ranked, limited results with stable Gadiruta IDs and optional municipality names.
+- [x] One-hour catalogue cache and fetch timestamps.
+- [x] Validated CTAN responses, saved fixtures, and offline error/timeout/cache tests.
+- [x] Distinguish empty results from unavailable provider data.
 - [ ] Search/open a stop or population centre.
 - [ ] Show serving lines.
 - [ ] Show upcoming services where supported.
@@ -160,15 +165,16 @@ Status: Out of MVP
 
 ## API
 
-Status: Foundation implemented; transport resources planned
+Status: Liveness and place search implemented; other transport resources planned
 
-The versioned API currently exposes application liveness and generated documentation. Liveness
-does not imply PostgreSQL or CTAN availability. See `docs/development.md` for local URLs.
+The versioned API exposes application liveness, population-centre search, and generated
+documentation. Liveness does not imply PostgreSQL or CTAN availability. See `docs/development.md`
+for local URLs. Place search uses the default per-process cache, not persistent storage; cold or
+expired-cache requests return a stable unavailability response if CTAN cannot supply usable data.
 
-Potential resources:
+Remaining potential resources:
 
 ```text
-GET /api/v1/places?q=
 GET /api/v1/journeys/direct
 GET /api/v1/lines
 GET /api/v1/lines/{id}

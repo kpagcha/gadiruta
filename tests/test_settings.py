@@ -1,3 +1,5 @@
+"""Verify environment-based Django configuration and startup validation in isolation."""
+
 import runpy
 from pathlib import Path
 
@@ -11,6 +13,7 @@ SETTINGS_PATH = Path(__file__).resolve().parents[1] / "gadiruta" / "settings.py"
 def test_configuration_requires_a_secret_key(
     monkeypatch: pytest.MonkeyPatch, secret: str | None
 ) -> None:
+    """Reject missing or blank secrets instead of starting with an insecure fallback."""
     if secret is None:
         monkeypatch.delenv("DJANGO_SECRET_KEY", raising=False)
     else:
@@ -24,6 +27,7 @@ def test_configuration_requires_a_secret_key(
 def test_debug_is_disabled_unless_explicitly_enabled(
     monkeypatch: pytest.MonkeyPatch, debug: str | None
 ) -> None:
+    """Keep debug off when omitted or explicitly disabled, accepting case and whitespace."""
     if debug is None:
         monkeypatch.delenv("DJANGO_DEBUG", raising=False)
     else:
@@ -33,6 +37,7 @@ def test_debug_is_disabled_unless_explicitly_enabled(
 
 
 def test_invalid_debug_flag_fails_configuration(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Reject misspelled debug values instead of silently enabling or disabling debug."""
     monkeypatch.setenv("DJANGO_DEBUG", "treu")
 
     with pytest.raises(ImproperlyConfigured, match="DJANGO_DEBUG must be true or false"):
@@ -40,6 +45,7 @@ def test_invalid_debug_flag_fails_configuration(monkeypatch: pytest.MonkeyPatch)
 
 
 def test_environment_configures_hosts_and_postgresql(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Apply host and PostgreSQL environment values while discarding blank host entries."""
     monkeypatch.setenv("DJANGO_DEBUG", "true")
     monkeypatch.setenv("DJANGO_ALLOWED_HOSTS", " example.test, api.example.test, ,")
     monkeypatch.setenv("POSTGRES_DB", "example_db")
