@@ -243,7 +243,7 @@ Live CTAN integration tests, if added, should be clearly separated from the defa
 
 ## API documentation
 
-Gadiruta's own API reference is generated through Django Ninja/OpenAPI.
+Gadiruta's own API reference uses Scalar to display Django Ninja's generated OpenAPI schema.
 
 When adding or changing an endpoint:
 
@@ -262,8 +262,11 @@ When adding or changing an endpoint:
 The place-search example contacts live CTAN on a cache miss. Query behavior and response fields
 are documented in OpenAPI. The cache is process-local and resets when that process restarts.
 
-Interactive documentation assets are supplied by the installed Ninja package through Django static
-files. Development serving requires `DJANGO_DEBUG=true`; production will need static-file hosting.
+The `scalar-ninja` integration serves the reference page at the same URL as before. Its browser
+bundle is pinned to a versioned jsDelivr URL in `gadiruta/api.py`; the browser needs internet access
+to load that bundle and Scalar's default fonts. The HTML page and OpenAPI JSON are served by Django
+without requiring debug mode or a frontend build. API requests from Scalar go directly to Gadiruta;
+no Scalar proxy is configured, and Scalar's optional AI agent is disabled.
 
 ---
 

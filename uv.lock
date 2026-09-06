@@ -119,6 +119,7 @@ dependencies = [
     { name = "httpx" },
     { name = "psycopg", extra = ["binary"] },
     { name = "pydantic" },
+    { name = "scalar-ninja" },
 ]
 
 [package.dev-dependencies]
@@ -138,6 +139,7 @@ requires-dist = [
     { name = "httpx", specifier = ">=0.28,<1" },
     { name = "psycopg", extras = ["binary"], specifier = ">=3.2,<4" },
     { name = "pydantic", specifier = ">=2.10,<3" },
+    { name = "scalar-ninja", specifier = ">=0.3,<0.4" },
 ]
 
 [package.metadata.requires-dev]
@@ -594,6 +596,15 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/5e/e5/9e274e24eeb027640ffc7442f21239f16d17f47acec15ae34f32e03a5c79/ruff-0.16.6-py3-none-win32.whl", hash = "sha256:0b87d9d16fcb63e8018423ca1d50b7260f15cb2da33e30db4baad4183a948c25", size = 10049212, upload-time = "2026-09-03T16:57:20.55Z" },
     { url = "https://files.pythonhosted.org/packages/22/31/72472449414223ed1a2da236b992adbb1a2ae59e34794574810f60ce068e/ruff-0.16.6-py3-none-win_amd64.whl", hash = "sha256:10d21c51c3495d8eaea7b703a16592117ea6eb1d649e36335aa965ff1173eb39", size = 10556402, upload-time = "2026-09-03T16:57:23.501Z" },
     { url = "https://files.pythonhosted.org/packages/fc/07/d781f8f8e1ac24bef9f3269cf62ffb1407ca24c3a8f12e5e22874f90528c/ruff-0.16.6-py3-none-win_arm64.whl", hash = "sha256:7a976c79b958f94e50a022a19f0f8c87387448020935ec14fc74331bd0a7f2c5", size = 10412850, upload-time = "2026-09-03T16:57:26.416Z" },
+]
+
+[[package]]
+name = "scalar-ninja"
+version = "0.3.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/b6/c7/5d6b43f8cd5e47c2b30e3f249721fa4abf7bbedd322e0e6d3ede69ab9c8f/scalar_ninja-0.3.0.tar.gz", hash = "sha256:fe657fa3356cf80bfa30b3297690a1e42ce7b0daa73738042b175463eab3a65e", size = 8005, upload-time = "2026-03-04T11:02:19.509Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/36/12/a6cba17c0fd973c6ef1b80a793fef73bf751a794631916f49c5cb2b0922a/scalar_ninja-0.3.0-py3-none-any.whl", hash = "sha256:8fb4aeecef527d8dfc81cd1ff00bffa66076a3201607f1bf4f2fb1c8206cadb2", size = 7377, upload-time = "2026-03-04T11:02:18.562Z" },
 ]
 
 [[package]]

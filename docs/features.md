@@ -14,7 +14,7 @@ Status: Implemented
 
 - [x] Existing Django project configured for PostgreSQL and environment-based settings.
 - [x] Versioned Django Ninja API with typed application liveness response.
-- [x] Generated OpenAPI schema and interactive API documentation.
+- [x] Generated OpenAPI schema and interactive Scalar API documentation.
 - [x] Locked dependencies, pytest, Ruff lint/format checks, and mypy type checks.
 
 The CTAN place-search backend and English/Spanish place-selection homepage are implemented.
