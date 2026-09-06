@@ -33,12 +33,13 @@ gadiruta/
     uv.lock
     gadiruta/        # Django settings, root API, and URL configuration
     transport/       # Public transport API, services, and CTAN integration
+    frontend/        # React application and frontend tooling
     tests/
     docs/
 ```
 
-The future React application will live in `frontend/`. Backend and frontend will be independently
-runnable but versioned together. A move to `backend/` is unnecessary for the first slices.
+Backend and frontend run independently but are versioned together. A move to `backend/` is
+unnecessary for the first slices.
 
 ---
 
@@ -116,7 +117,7 @@ Stack:
 - TanStack Query.
 - react-i18next.
 
-Suggested organization:
+Implemented organization:
 
 ```text
 frontend/
@@ -125,9 +126,6 @@ frontend/
         components/
         features/
             journey-search/
-            lines/
-            stops/
-            alerts/
         pages/
         i18n/
             en.json
@@ -143,7 +141,18 @@ Responsibilities:
 - Query caching.
 - Responsive presentation.
 - Localization.
-- localStorage-based recent/favorite state for MVP.
+- localStorage-based language preference. Recent searches and favorites are not implemented yet.
+
+React Router supplies the homepage and a localized not-found page. Each autocomplete keeps draft
+text separate from a confirmed public place identity. TanStack Query shares suggestion results
+between fields, debounces requests by 250 ms, and cancels obsolete requests. Suggestions have a
+five-minute freshness window and a ten-minute inactive lifetime; failed requests are not automatically
+retried, and the error state offers a retry control.
+The API client validates response shape and imposes a 25-second request timeout.
+
+Browser requests use relative `/api/v1/` URLs. Vite proxies `/api/` to Django on port 8000 during
+development and local build preview, so no cross-origin API configuration is needed. Production
+hosting is not configured: it will need same-origin API forwarding and SPA fallback for UI routes.
 
 ---
 
@@ -219,7 +228,10 @@ Languages:
 
 English is the source/fallback language.
 
-Browser locale may determine the initial language, with an explicit EN/ES switcher available.
+A saved EN/ES preference takes priority over the first supported browser language; otherwise the
+UI falls back to English. Storage failures do not prevent switching languages. Bundled resources
+cover all interface text, while official place names remain unchanged. Document language, page
+title, and fetch timestamps follow the active locale.
 
 ---
 

@@ -11,6 +11,13 @@ __pycache__/
 .mypy_cache/
 .coverage
 htmlcov/
+# Frontend
+node_modules/
+frontend/dist/
+*.tsbuildinfo
+# Local browser verification artifacts
+output/playwright/
+.playwright-cli/
 # Django
 staticfiles/
 # PyCharm

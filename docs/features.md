@@ -17,19 +17,21 @@ Status: Implemented
 - [x] Generated OpenAPI schema and interactive API documentation.
 - [x] Locked dependencies, pytest, Ruff lint/format checks, and mypy type checks.
 
-The CTAN place-search backend is implemented; the React frontend is not. The next small milestone
-is an English/Spanish origin and destination autocomplete consuming this API. Direct-service lookup
-still requires upstream timetable/calendar discovery before implementation.
+The CTAN place-search backend and English/Spanish place-selection homepage are implemented.
+Direct-service lookup is the next functional slice; it requires upstream timetable/calendar
+discovery before implementation. Automated frontend interaction tests (such as autocomplete,
+swapping, and language-switching tests) are deferred as low priority and do not block current
+milestones. Frontend verification uses static checks and manual browser checks for now.
 
 ---
 
 ## Journey search
 
-Status: Planned
+Status: Place selection implemented; journey lookup planned
 
-- [ ] Origin autocomplete.
-- [ ] Destination autocomplete.
-- [ ] Swap origin/destination.
+- [x] Origin autocomplete.
+- [x] Destination autocomplete.
+- [x] Swap origin/destination, including partially typed input.
 - [ ] Date selection.
 - [ ] Time selection/filtering.
 - [ ] Direct service lookup.
@@ -44,6 +46,9 @@ Notes:
 
 - MVP supports direct journeys only.
 - Routes requiring transfers must not be presented as impossible; they are simply unsupported in the MVP.
+- Place suggestions support loading, empty, and retryable error states. Typing clears any previous
+  selection; users must select a suggestion to confirm a place. Choosing the same origin and
+  destination displays a warning. The homepage explicitly says journey search is not available yet.
 
 ---
 
@@ -64,13 +69,14 @@ Status: Planned
 
 ## Stops / locations
 
-Status: Population-centre search API implemented; UI and physical stops planned
+Status: Population-centre search API and autocomplete implemented; detail pages and physical stops planned
 
 - [x] Search Cádiz population centres by name or municipality, ignoring case and accents.
 - [x] Ranked, limited results with stable Gadiruta IDs and optional municipality names.
 - [x] One-hour catalogue cache and fetch timestamps.
 - [x] Validated CTAN responses, saved fixtures, and offline error/timeout/cache tests.
 - [x] Distinguish empty results from unavailable provider data.
+- [x] Select population centres in the homepage autocomplete, with municipality and fetch timestamp.
 - [ ] Search/open a stop or population centre.
 - [ ] Show serving lines.
 - [ ] Show upcoming services where supported.
@@ -103,26 +109,26 @@ Status: Planned
 
 ## Localization
 
-Status: Planned
+Status: Implemented for the current homepage and not-found page
 
-- [ ] English UI.
-- [ ] Spanish UI.
-- [ ] English fallback language.
-- [ ] Browser locale detection.
-- [ ] EN / ES language switcher.
-- [ ] No unlocalized user-facing strings in components.
+- [x] English UI.
+- [x] Spanish UI.
+- [x] English fallback language.
+- [x] Browser locale detection.
+- [x] EN / ES language switcher with a saved local preference when storage is available.
+- [x] No unlocalized user-facing strings in components.
 
 ---
 
 ## Responsive/accessibility
 
-Status: Planned
+Status: Implemented for place selection; broader journey flow planned
 
-- [ ] Mobile-first responsive layout.
-- [ ] Keyboard-usable journey search.
-- [ ] Accessible labels for controls.
-- [ ] Appropriate focus states.
-- [ ] Loading/error/empty states readable by assistive technology where appropriate.
+- [x] Mobile-first responsive layout.
+- [x] Keyboard-usable place selection (arrow keys, Enter, Escape, and Tab).
+- [x] Accessible labels for controls and a skip-to-content link.
+- [x] Appropriate focus states.
+- [x] Live announcements for suggestion loading/error/empty states and selection changes.
 
 ---
 

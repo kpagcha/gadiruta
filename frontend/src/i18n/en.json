@@ -1,0 +1,63 @@
+{
+  "app": {
+    "name": "Gadiruta",
+    "title": "Gadiruta · Your way around Cádiz",
+    "home": "Gadiruta home",
+    "skipToContent": "Skip to content"
+  },
+  "language": {
+    "label": "Language",
+    "en": "English",
+    "es": "Español",
+    "enShort": "EN",
+    "esShort": "ES"
+  },
+  "hero": {
+    "eyebrow": "A little closer to Cádiz",
+    "title": "Where are you\ngoing?",
+    "description": "From the city to the coast. Find your starting point and destination around the Bay of Cádiz.",
+    "footnote": "Local places. A simple start."
+  },
+  "journey": {
+    "title": "Choose your places",
+    "description": "Start with a city or population centre.",
+    "origin": "From",
+    "destination": "To",
+    "originPlaceholder": "Where are you starting?",
+    "destinationPlaceholder": "Where would you like to go?",
+    "clearOrigin": "Clear starting point",
+    "clearDestination": "Clear destination",
+    "swap": "Swap starting point and destination",
+    "swapped": "Starting point and destination swapped.",
+    "selectionTitle": "Your places",
+    "selectionSummary": "From {{origin}} to {{destination}}.",
+    "selectionHint": "Choose a suggestion to select a place.",
+    "samePlace": "Choose different places for your starting point and destination.",
+    "previewLabel": "A first step",
+    "previewNotice": "You can choose places here. Timetables and journey search aren’t available yet."
+  },
+  "places": {
+    "suggestions": "Suggestions for {{field}}",
+    "minimum": "Type at least 2 characters to find a place.",
+    "instructions": "Use the up and down arrow keys to explore suggestions, Enter to select, and Escape to close.",
+    "loading": "Finding places…",
+    "empty": "No places found for “{{query}}”. Try another name.",
+    "error": "We couldn’t load places. Please try again.",
+    "retry": "Try again",
+    "results_one": "{{count}} place found.",
+    "results_other": "{{count}} places found.",
+    "selected": "Selected: {{name}}.",
+    "fetchedAt": "Place data fetched {{time}}"
+  },
+  "footer": {
+    "region": "Made for the Bay of Cádiz.",
+    "attribution": "Place information provided by the",
+    "source": "Portal de Datos Abiertos de la Red de Consorcios de Transporte de Andalucía",
+    "independent": "An independent project. Not an official CTAN or Junta de Andalucía service."
+  },
+  "notFound": {
+    "title": "This isn’t the right stop.",
+    "description": "We couldn’t find that page.",
+    "back": "Back to choosing places"
+  }
+}

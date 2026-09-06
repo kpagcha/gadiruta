@@ -19,11 +19,12 @@ gadiruta/
     uv.lock
     gadiruta/
     transport/
+    frontend/
     tests/
     docs/
 ```
 
-The existing Django project stays at the repository root. `frontend/` is planned.
+The existing Django project stays at the repository root; the React application lives in `frontend/`.
 
 ---
 
@@ -37,7 +38,7 @@ Backend prerequisites:
 - PostgreSQL 15 or newer, as required by
   [Django 6.1](https://docs.djangoproject.com/en/6.1/ref/databases/#postgresql-notes).
 
-Node.js and a frontend package manager will be selected when React is initialized.
+Frontend prerequisites: Node.js 24 (24.11.1 or newer within that major) and npm 11.
 
 ---
 
@@ -60,7 +61,7 @@ uv run --locked --env-file .env python manage.py migrate
 uv run --locked --env-file .env python manage.py runserver
 ```
 
-The server defaults to http://127.0.0.1:8000. The homepage/React UI is not implemented yet.
+The API server defaults to http://127.0.0.1:8000. Start the frontend separately as described below.
 The liveness and place-search APIs do not require a database connection. Django's normal `runserver`
 migration check and the scaffold's admin require a configured database.
 
@@ -115,18 +116,50 @@ Stack:
 - TanStack Query.
 - react-i18next.
 
-Document exact setup commands after frontend initialization.
+From the repository root, install the versions recorded in `frontend/package-lock.json`:
 
-Expected topics:
-
-```text
-Install dependencies
-Start Vite dev server
-Run TypeScript typecheck
-Run ESLint
-Run frontend tests
-Build production bundle
+```powershell
+npm --prefix frontend ci
+npm --prefix frontend run dev
 ```
+
+Open http://127.0.0.1:5173 with Django running on port 8000. Vite forwards `/api/` requests to Django;
+there are no frontend secrets or additional environment variables. Ports are fixed: stop a previous
+server if the port is busy. A cold place lookup contacts live CTAN through the backend.
+
+Checks and formatting:
+
+```powershell
+npm --prefix frontend run typecheck
+npm --prefix frontend run lint
+npm --prefix frontend run format:check
+npm --prefix frontend run format
+npm --prefix frontend run build
+npm --prefix frontend run preview
+```
+
+ESLint covers JavaScript/TypeScript and React hook rules; Prettier covers frontend source and
+configuration. The build also runs the TypeScript check. TypeScript stays on 6.0 while the selected
+typescript-eslint version supports versions below 6.1. No frontend automated test runner is configured;
+interaction tests are deferred as described in `docs/features.md`. Use the checks above and manual
+browser verification for current frontend changes.
+
+Manrope is bundled through `@fontsource-variable/manrope`, with Segoe UI and then the generic
+sans-serif font as fallbacks. The Latin variable font covers English/Spanish text and the UI's
+font weights. Its OFL license is included in `frontend/public/fonts/Manrope-OFL.txt` and build output.
+
+Build output goes to ignored `frontend/dist/`. Preview serves it at http://127.0.0.1:4173 and uses
+the same local Django proxy; it is not a production deployment server.
+
+### Manual place-selection check
+
+1. Type `cadiz` into the starting-point field; select Cádiz using Down then Enter.
+2. Type `puerto` into the destination field and choose a suggestion with the pointer.
+3. Swap the places, edit a selected label, and clear a field. Editing must remove its confirmed identity.
+4. Search for an unmatched name and check the empty state; an unavailable backend should show a retry.
+5. Switch EN/ES, reload to check the saved preference, and try a narrow mobile viewport.
+
+Only place selection is available: there is no timetable request, date/time control, or journey result yet.
 
 ---
 
@@ -241,7 +274,7 @@ Frontend UI supports:
 - English.
 - Spanish.
 
-Expected translation files:
+Translation files:
 
 ```text
 frontend/src/i18n/en.json

@@ -1,0 +1,63 @@
+{
+  "app": {
+    "name": "Gadiruta",
+    "title": "Gadiruta · Muévete por Cádiz",
+    "home": "Inicio de Gadiruta",
+    "skipToContent": "Saltar al contenido"
+  },
+  "language": {
+    "label": "Idioma",
+    "en": "English",
+    "es": "Español",
+    "enShort": "EN",
+    "esShort": "ES"
+  },
+  "hero": {
+    "eyebrow": "Un poco más cerca de Cádiz",
+    "title": "¿Adónde\nvamos?",
+    "description": "De la ciudad a la costa. Encuentra tu punto de partida y tu destino por la Bahía de Cádiz.",
+    "footnote": "Lugares de aquí. Un comienzo sencillo."
+  },
+  "journey": {
+    "title": "Elige tus lugares",
+    "description": "Empieza por una ciudad o núcleo de población.",
+    "origin": "Origen",
+    "destination": "Destino",
+    "originPlaceholder": "¿De dónde sales?",
+    "destinationPlaceholder": "¿Adónde quieres ir?",
+    "clearOrigin": "Borrar origen",
+    "clearDestination": "Borrar destino",
+    "swap": "Intercambiar origen y destino",
+    "swapped": "Origen y destino intercambiados.",
+    "selectionTitle": "Tus lugares",
+    "selectionSummary": "De {{origin}} a {{destination}}.",
+    "selectionHint": "Elige una sugerencia para seleccionar un lugar.",
+    "samePlace": "Elige lugares distintos para el origen y el destino.",
+    "previewLabel": "Un primer paso",
+    "previewNotice": "Ya puedes elegir tus lugares. Los horarios y la búsqueda de viajes aún no están disponibles."
+  },
+  "places": {
+    "suggestions": "Sugerencias para {{field}}",
+    "minimum": "Escribe al menos 2 caracteres para buscar un lugar.",
+    "instructions": "Usa las flechas arriba y abajo para recorrer las sugerencias, Intro para seleccionar y Escape para cerrar.",
+    "loading": "Buscando lugares…",
+    "empty": "No encontramos lugares para «{{query}}». Prueba con otro nombre.",
+    "error": "No hemos podido cargar los lugares. Inténtalo de nuevo.",
+    "retry": "Reintentar",
+    "results_one": "{{count}} lugar encontrado.",
+    "results_other": "{{count}} lugares encontrados.",
+    "selected": "Seleccionado: {{name}}.",
+    "fetchedAt": "Datos de lugares obtenidos el {{time}}"
+  },
+  "footer": {
+    "region": "Hecho para la Bahía de Cádiz.",
+    "attribution": "Información de lugares proporcionada por el",
+    "source": "Portal de Datos Abiertos de la Red de Consorcios de Transporte de Andalucía",
+    "independent": "Un proyecto independiente. No es un servicio oficial de CTAN ni de la Junta de Andalucía."
+  },
+  "notFound": {
+    "title": "Esta no es la parada.",
+    "description": "No hemos encontrado esa página.",
+    "back": "Volver a elegir lugares"
+  }
+}
