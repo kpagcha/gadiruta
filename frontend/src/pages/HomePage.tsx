@@ -48,7 +48,7 @@ export function HomePage() {
       </div>
 
       <section
-        className="min-w-0 rounded-3xl border border-line bg-white p-6 shadow-card max-[380px]:p-4.5 min-[850px]:p-8"
+        className="min-w-0 rounded-3xl border border-line bg-surface-card p-6 shadow-(--shadow-card) max-[380px]:p-4.5 min-[850px]:p-8"
         aria-labelledby="journey-title"
       >
         <div className="mb-7.5">

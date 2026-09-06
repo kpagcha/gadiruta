@@ -141,10 +141,12 @@ requirements emerge that the web app and PWA cannot satisfy well.
 
 ## Appearance
 
-Status: Dark theme planned post-MVP
+Status: Implemented
 
-- [ ] Dark theme with system-preference support and an explicit user toggle.
-- [ ] Preserve accessible contrast across both themes.
+- [x] Light and dark semantic color tokens shared across the frontend.
+- [x] Follow the browser's system preference on first visit.
+- [x] Explicit light/dark theme toggle with a saved browser preference.
+- [x] Preserve accessible contrast and focus states across both themes.
 
 ---
 

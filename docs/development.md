@@ -152,6 +152,11 @@ typescript-eslint version supports versions below 6.1. No frontend automated tes
 interaction tests are deferred as described in `docs/features.md`. Use the checks above and manual
 browser verification for current frontend changes.
 
+The frontend follows the browser's `prefers-color-scheme` value on first visit. The theme button in the header toggles
+between light and dark and saves an explicit choice under the `gadiruta.theme` local-storage key. Clear that key (or use
+a private browser context) to verify system-preference behavior again. Check both themes when reviewing color, focus,
+popover, and form-control changes.
+
 Manrope is bundled through `@fontsource-variable/manrope`, with Segoe UI and then the generic
 sans-serif font as fallbacks. The Latin variable font covers English/Spanish text and the UI's
 font weights. Its OFL license is included in `frontend/public/fonts/Manrope-OFL.txt` and build output.

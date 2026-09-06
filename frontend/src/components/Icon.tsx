@@ -5,14 +5,16 @@ import {
   Check,
   LoaderCircle,
   MapPin,
+  Moon,
   Route,
+  Sun,
   X,
   type LucideIcon,
 } from 'lucide-react';
 
 /** Available decorative symbols; accessible names belong to their surrounding controls. */
 export type IconName =
-  'route' | 'gadiruta' | 'pin' | 'swap' | 'close' | 'arrow' | 'check' | 'loader';
+  'route' | 'gadiruta' | 'pin' | 'swap' | 'close' | 'arrow' | 'check' | 'loader' | 'sun' | 'moon';
 
 const iconComponents: Record<Exclude<IconName, 'gadiruta'>, LucideIcon> = {
   route: Route,
@@ -22,6 +24,8 @@ const iconComponents: Record<Exclude<IconName, 'gadiruta'>, LucideIcon> = {
   arrow: ArrowRight,
   check: Check,
   loader: LoaderCircle,
+  sun: Sun,
+  moon: Moon,
 };
 
 interface IconProps {

@@ -420,9 +420,12 @@ PWA work should cover, as appropriate:
 - Sensible caching of recently viewed transport data, with clear freshness and stale-data behavior.
 - Predictable update detection, user messaging, and service-worker activation.
 
+The token-based dark theme is already implemented as a small cross-cutting frontend enhancement, with system-preference
+support and an explicit user toggle. It does not change the product's web-first direction or the priority of PWA as the
+next major post-MVP feature.
+
 After that PWA foundation, prioritize:
 
-- Dark theme with system-preference support, an explicit user toggle, and accessible contrast.
 - Interactive map.
 - Nearby stops.
 - Fares.

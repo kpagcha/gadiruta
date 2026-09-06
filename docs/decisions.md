@@ -156,6 +156,32 @@ Consequences:
 - Preserve geographic data when available.
 - Add map visualization in a later phase.
 
+### 2026-09-06 — Use semantic tokens for the light and dark themes
+
+Context:
+
+The frontend's visual palette is shared across the page shell and place-selection flow. A dark theme should not require
+duplicating raw colors throughout React components or maintaining a second frontend styling system.
+
+Decision:
+
+Keep light and dark values in the shared Tailwind theme tokens and override them through a document `data-theme`
+attribute. Follow the browser system preference on first visit, then let the header control persist an explicit light or
+dark choice in `localStorage`. Bootstrap the document theme before React mounts so the initial page does not flash the
+light palette.
+
+Why:
+
+- Keeps component classes semantic and makes future palette adjustments centralized.
+- Supports an app-like preference without introducing accounts or a second frontend.
+- Preserves the existing web-first architecture and accessibility focus.
+
+Consequences:
+
+- New interface colors must be added as semantic theme tokens rather than raw component-level hex values.
+- Both themes need contrast and focus-state checks whenever visual components change.
+- PWA remains the preferred next major post-MVP feature; dark mode does not change that ordering.
+
 ### 2026-09-06 — Prefer a PWA before a native mobile app
 
 Context:

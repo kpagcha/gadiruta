@@ -122,7 +122,7 @@ export function PlaceAutocomplete({
         {label}
       </label>
       <div
-        className={`place-field flex items-center rounded-xl border bg-white focus-within:shadow-field-focus ${value.place ? 'bg-surface-input' : ''}`}
+        className={`place-field flex items-center rounded-xl border bg-surface-card focus-within:shadow-(--shadow-field-focus) ${value.place ? 'bg-surface-input' : ''}`}
       >
         <input
           ref={inputRef}
@@ -189,7 +189,7 @@ export function PlaceAutocomplete({
       </span>
 
       {showPopup && (
-        <div className="absolute top-[calc(100%-20px)] right-0 left-0 z-10 overflow-hidden rounded-xl border border-line-popover bg-white shadow-popover">
+        <div className="absolute top-[calc(100%-20px)] right-0 left-0 z-10 overflow-hidden rounded-xl border border-line-popover bg-surface-card shadow-(--shadow-popover)">
           <ul
             id={listId}
             className={`m-0 max-h-68.75 list-none overflow-y-auto overscroll-contain ${options.length ? 'p-1.25' : 'p-0'}`}

@@ -12,6 +12,10 @@
     "enShort": "EN",
     "esShort": "ES"
   },
+  "theme": {
+    "switchToDark": "Switch to dark theme",
+    "switchToLight": "Switch to light theme"
+  },
   "hero": {
     "eyebrow": "A little closer to Cádiz",
     "title": "Where are you\ngoing?",

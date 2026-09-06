@@ -132,6 +132,7 @@ frontend/
         i18n/
             en.json
             es.json
+        theme.ts
         styles/
 ```
 
@@ -144,10 +145,14 @@ Responsibilities:
 - Responsive presentation.
 - Localization.
 - localStorage-based language preference. Recent searches and favorites are not implemented yet.
+- Token-based light/dark presentation with a persisted theme preference.
 
 Tailwind utility classes provide component-level layout and visual styling. The shared stylesheet keeps only global
 font/base/accessibility rules, design tokens, and small custom CSS that is clearer outside JSX. Lucide React supplies
 the shared interface icon set; icons remain decorative unless their surrounding control provides an accessible name.
+Semantic theme tokens are overridden on the document's `data-theme` attribute. The first visit follows the browser's
+system preference; the header toggle persists an explicit light/dark choice in `localStorage`. A small head bootstrap
+applies the initial attribute before the React bundle loads to avoid a light-theme flash.
 
 React Router supplies the homepage and a localized not-found page. Each autocomplete keeps draft
 text separate from a confirmed public place identity. TanStack Query shares suggestion results

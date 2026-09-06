@@ -5,6 +5,7 @@ import { Link, Route, Routes } from 'react-router';
 import { Icon } from './components/Icon';
 import { changeLanguage } from './i18n';
 import { HomePage } from './pages/HomePage';
+import { useTheme } from './theme';
 
 /** Keep unknown URLs recoverable without presenting an unrelated page as a valid route. */
 function NotFoundPage() {
@@ -29,6 +30,8 @@ function NotFoundPage() {
 export default function App() {
   const { t, i18n } = useTranslation();
   const language = i18n.resolvedLanguage ?? 'en';
+  const { theme, toggleTheme } = useTheme();
+  const themeLabel = theme === 'dark' ? t('theme.switchToLight') : t('theme.switchToDark');
 
   useEffect(() => {
     document.documentElement.lang = language;
@@ -38,7 +41,7 @@ export default function App() {
   return (
     <div className="mx-auto w-[calc(100%-40px)] max-w-280 max-[380px]:w-[calc(100%-28px)]">
       <a
-        className="skip-link fixed top-3 left-3 z-100 rounded-lg bg-accent px-5 py-3 text-white"
+        className="skip-link fixed top-3 left-3 z-100 rounded-lg bg-accent px-5 py-3 text-on-accent"
         href="#main-content"
       >
         {t('app.skipToContent')}
@@ -54,34 +57,46 @@ export default function App() {
           </span>
           <span>{t('app.name')}</span>
         </Link>
-        <div
-          className="flex items-center gap-0.5 text-[13px] font-bold"
-          role="group"
-          aria-label={t('language.label')}
-        >
+        <div className="flex items-center gap-2.5">
           <button
             type="button"
-            lang="en"
-            aria-label={t('language.en')}
-            aria-pressed={language === 'en'}
-            className={`min-h-11 min-w-11 rounded-lg border-0 bg-transparent px-2 text-muted transition-colors hover:text-ink ${language === 'en' ? 'bg-surface-active text-accent' : ''}`}
-            onClick={() => changeLanguage('en')}
+            aria-label={themeLabel}
+            aria-pressed={theme === 'dark'}
+            title={themeLabel}
+            className="grid size-11 place-items-center rounded-lg border-0 bg-transparent text-muted transition-colors hover:text-ink"
+            onClick={toggleTheme}
           >
-            {t('language.enShort')}
+            <Icon name={theme === 'dark' ? 'sun' : 'moon'} size={18} />
           </button>
-          <span className="text-muted-faint" aria-hidden="true">
-            /
-          </span>
-          <button
-            type="button"
-            lang="es"
-            aria-label={t('language.es')}
-            aria-pressed={language === 'es'}
-            className={`min-h-11 min-w-11 rounded-lg border-0 bg-transparent px-2 text-muted transition-colors hover:text-ink ${language === 'es' ? 'bg-surface-active text-accent' : ''}`}
-            onClick={() => changeLanguage('es')}
+          <div
+            className="flex items-center gap-0.5 text-[13px] font-bold"
+            role="group"
+            aria-label={t('language.label')}
           >
-            {t('language.esShort')}
-          </button>
+            <button
+              type="button"
+              lang="en"
+              aria-label={t('language.en')}
+              aria-pressed={language === 'en'}
+              className={`min-h-11 min-w-11 rounded-lg border-0 bg-transparent px-2 text-muted transition-colors hover:text-ink ${language === 'en' ? 'bg-surface-active text-accent' : ''}`}
+              onClick={() => changeLanguage('en')}
+            >
+              {t('language.enShort')}
+            </button>
+            <span className="text-muted-faint" aria-hidden="true">
+              /
+            </span>
+            <button
+              type="button"
+              lang="es"
+              aria-label={t('language.es')}
+              aria-pressed={language === 'es'}
+              className={`min-h-11 min-w-11 rounded-lg border-0 bg-transparent px-2 text-muted transition-colors hover:text-ink ${language === 'es' ? 'bg-surface-active text-accent' : ''}`}
+              onClick={() => changeLanguage('es')}
+            >
+              {t('language.esShort')}
+            </button>
+          </div>
         </div>
       </header>
       <Routes>

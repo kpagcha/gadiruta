@@ -12,6 +12,10 @@
     "enShort": "EN",
     "esShort": "ES"
   },
+  "theme": {
+    "switchToDark": "Cambiar al tema oscuro",
+    "switchToLight": "Cambiar al tema claro"
+  },
   "hero": {
     "eyebrow": "Un poco más cerca de Cádiz",
     "title": "¿Adónde\nvamos?",
