@@ -120,6 +120,25 @@ Status: Implemented for the current homepage and not-found page
 
 ---
 
+## PWA / installability
+
+Status: High-priority post-MVP feature; not implemented
+
+The preferred post-MVP mobile experience is an installable enhancement of the existing React + Vite web application.
+It should be planned after the first-version journey, schedule, line, stop, alert, localization, and responsive
+milestones are complete.
+
+- [ ] Web app manifest and install metadata.
+- [ ] Application icons suitable for Android and iOS installation.
+- [ ] Service worker and offline app shell.
+- [ ] Sensible caching of recently viewed transport data, with explicit freshness and stale-data handling.
+- [ ] Predictable update detection, messaging, and activation behavior.
+
+React Native/Expo is not planned as a parallel frontend. Reconsider a native implementation only if genuinely native
+requirements emerge that the web app and PWA cannot satisfy well.
+
+---
+
 ## Appearance
 
 Status: Dark theme planned post-MVP

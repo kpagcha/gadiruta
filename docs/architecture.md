@@ -154,6 +154,26 @@ Browser requests use relative `/api/v1/` URLs. Vite proxies `/api/` to Django on
 development and local build preview, so no cross-origin API configuration is needed. Production
 hosting is not configured: it will need same-origin API forwarding and SPA fallback for UI routes.
 
+### Post-MVP PWA boundary
+
+PWA support is the preferred post-MVP extension of the existing React + Vite frontend. It should remain a web-first
+application rather than creating a second near-term mobile frontend. The planned PWA boundary includes:
+
+- A manifest and platform-appropriate icons for installation on Android and iOS.
+- A service worker that provides a reliable offline application shell.
+- Carefully scoped caching for recently viewed transport data, preserving freshness metadata and making stale data
+  visible to users.
+- Deliberate update detection and service-worker activation behavior so users do not remain on an unexpectedly old
+  application shell.
+
+The PWA must continue to use Gadiruta's Django API for provider-backed data. Offline caching is an enhancement for
+recently available data, not permission to expose raw CTAN responses or silently present data as current. This work
+starts only after the first-version journey, schedule, line, stop, alert, localization, and responsive milestones are
+complete.
+
+React Native/Expo is a later fallback, not a parallel architecture target. Reconsider a native app only if genuinely
+native requirements emerge that the browser/PWA platform cannot satisfy adequately.
+
 ---
 
 ## API boundary

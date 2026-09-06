@@ -156,6 +156,36 @@ Consequences:
 - Preserve geographic data when available.
 - Add map visualization in a later phase.
 
+### 2026-09-06 — Prefer a PWA before a native mobile app
+
+Context:
+
+Gadiruta already has a React + Vite web frontend, and the product should remain web-first while the first-version
+journey, schedule, line, stop, alert, localization, and responsive milestones are completed.
+
+Decision:
+
+Make an installable Progressive Web App the highest-priority post-MVP mobile direction. Extend the existing frontend
+with a manifest and icons, a service worker and offline app shell, carefully scoped caching for recent transport data,
+and predictable update behavior. Do not implement PWA functionality as part of the current MVP.
+
+React Native/Expo remains a later option only if genuinely native requirements emerge that the web platform and PWA
+cannot satisfy adequately.
+
+Why:
+
+- Reuses the existing web UI, routing, translations, API boundary, and design system.
+- Provides an app-like installation path for Android and iOS without maintaining a second frontend.
+- Keeps offline behavior and cached transport data within the established web/API boundaries.
+- Defers the cost of native tooling and duplicated platform-specific UI until there is a demonstrated need.
+
+Consequences:
+
+- PWA work is planned immediately after the first-version milestones, before evaluating React Native/Expo.
+- Offline data must carry clear freshness semantics and must not be presented as current when stale.
+- Service-worker updates need explicit testing and user-facing behavior so old app shells do not persist unexpectedly.
+- A native app may still be introduced later if web capabilities prove insufficient.
+
 ---
 
 ## 2026-09-05 — Cached population-centre catalogue with stable public IDs

@@ -394,7 +394,8 @@ Do **not** initially implement:
 - Flights.
 - Accounts/authentication.
 - Payments.
-- Native mobile apps.
+- Native mobile apps (including React Native/Expo); revisit them only if genuinely native requirements remain after
+  the PWA route has been evaluated.
 - Push notifications.
 - Complex map functionality.
 - Full Andalusia coverage.
@@ -408,15 +409,27 @@ Focus on Cádiz and make the basic experience excellent first.
 
 ## Phase 2: post-MVP priorities
 
-Prioritize the following improvements after the MVP workflow is polished:
+After the first-version milestones are complete and the core workflow is polished, prioritize PWA support as the next
+major product step. Keep Gadiruta web-first by extending the existing React + Vite application so it can be installed
+and feel app-like on Android and iOS.
+
+PWA work should cover, as appropriate:
+
+- A web app manifest and platform-appropriate application icons.
+- A service worker and reliable offline app shell.
+- Sensible caching of recently viewed transport data, with clear freshness and stale-data behavior.
+- Predictable update detection, user messaging, and service-worker activation.
+
+After that PWA foundation, prioritize:
 
 - Dark theme with system-preference support, an explicit user toggle, and accessible contrast.
 - Interactive map.
 - Nearby stops.
 - Fares.
 - Better favorites.
-- PWA/installability.
-- Offline recently-viewed schedules.
+
+React Native/Expo remains a later option, not a parallel near-term frontend. Reconsider it only if requirements emerge
+that the web platform and PWA cannot satisfy well, such as genuinely native capabilities or constraints.
 
 ## Phase 3
 
