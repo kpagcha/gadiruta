@@ -316,6 +316,86 @@ fix: handle CTAN timeout responses
 
 Avoid giant implementation commits and trivial microcommits.
 
+### Git hooks
+
+Install the shared checks once per clone, after installing the backend and frontend dependencies:
+
+```powershell
+uv sync --locked
+npm --prefix frontend ci
+uv run --locked pre-commit install --install-hooks
+uv run --locked pre-commit run --all-files
+uv run --locked pre-commit run --hook-stage pre-push --all-files
+```
+
+The versioned `.pre-commit-config.yaml` uses [pre-commit](https://pre-commit.com/) to install both
+`pre-commit` and `pre-push` hooks. Repeat the install command in existing clones when hook types
+change, and in every new clone: Git does not install hooks when cloning. Generated hook scripts
+are local and are not committed. `uv` and `npm` must be on PATH.
+
+Local hooks reuse tools from `uv.lock` and `frontend/package-lock.json`. Additional hooks come from
+version-pinned [Gitleaks](https://github.com/gitleaks/gitleaks) and
+[pre-commit-hooks](https://github.com/pre-commit/pre-commit-hooks) repositories. Initial installation
+needs internet access to download their isolated environments and build Gitleaks; pre-commit uses
+an available Go toolchain or downloads one when needed. No global Gitleaks installation is required.
+Cached hook environments are reused on subsequent runs. Install/update project dependencies with
+`uv sync --locked` and `npm --prefix frontend ci` before running checks.
+
+#### Pre-commit: fast checks
+
+- Gitleaks scans staged changes for likely credentials and private keys, with redacted output.
+- Conflict-marker detection runs even outside a merge.
+- JSON, YAML, and TOML files must parse successfully.
+- Added or modified files must not exceed 1 MiB; review any legitimate exception and narrowly scope
+  it in the hook configuration rather than disabling the guard.
+- Filename checks reject case conflicts that break case-insensitive filesystems.
+
+Normal commits run Python lint/format checks when Python files or Python tool configuration change,
+and frontend lint/format checks when anything under `frontend/` changes. Hook configuration and
+line-ending policy changes trigger both groups. Each triggered group checks its whole source tree
+so configuration changes are covered too. Documentation-only commits skip lint/format checks but
+still receive the applicable secret, conflict, file-size, and filename checks.
+
+Gitleaks checks the staged diff even when invoked with `pre-commit run --all-files`; that command
+is not a full repository/history secret audit. Deliberate example/test values must not justify
+broad exclusions: if a false positive appears, review it and allow only the specific safe value or
+finding. If a real credential is exposed, revoke/rotate it; deleting it from the latest file is
+not sufficient.
+
+Formatting is check-only: a failure blocks the commit without rewriting or staging source. Fix the
+reported issues, review the diff, stage the corrected files, and retry the commit:
+
+```powershell
+uv run --locked ruff format .
+npm --prefix frontend run format
+```
+
+Pre-commit temporarily stashes unstaged tracked changes while checking a normal commit and restores
+them afterwards. Whole-tree checks can still see untracked source files. `.gitattributes` keeps
+text checkouts on LF endings across Windows and Unix, matching the formatters.
+
+#### Pre-push: correctness checks
+
+Pushes run the full backend pytest suite, mypy, Django's system checks with
+`.env.example`, and the frontend production build. These checks run even for documentation-only
+changes. The build includes TypeScript checking and writes only ignored `frontend/dist/` output;
+no frontend automated tests are configured or required while they remain deferred.
+
+Current tests and system checks need neither PostgreSQL nor live CTAN access. The hook does not
+load a private `.env`, apply migrations, start servers, or perform dependency security audits.
+When database-backed tests or transport models are introduced, revisit the prerequisites and add a
+missing-migrations check without applying migrations automatically.
+
+Run the pre-push command above before pushing to diagnose failures locally. These hooks check the
+current checkout, not an isolated copy of each pushed commit; use a clean checkout of the branch
+being pushed. Local hooks can also be skipped, so they are not an enforcement boundary. Run the
+same applicable checks in CI against the exact commits under review when CI is introduced; CI is
+not configured yet. See the [pre-commit CI guidance](https://pre-commit.com/#usage-in-continuous-integration).
+
+PyCharm's Git commits and pushes use the same installed hooks. Ensure PyCharm can find `uv` and
+`npm` (restart the IDE after PATH changes); selecting a Python interpreter alone does not make npm
+available.
+
 ---
 
 ## Documentation workflow
