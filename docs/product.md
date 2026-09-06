@@ -406,8 +406,11 @@ Focus on Cádiz and make the basic experience excellent first.
 
 # Future phases
 
-## Phase 2
+## Phase 2: post-MVP priorities
 
+Prioritize the following improvements after the MVP workflow is polished:
+
+- Dark theme with system-preference support, an explicit user toggle, and accessible contrast.
 - Interactive map.
 - Nearby stops.
 - Fares.

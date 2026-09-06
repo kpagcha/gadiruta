@@ -120,6 +120,15 @@ Status: Implemented for the current homepage and not-found page
 
 ---
 
+## Appearance
+
+Status: Dark theme planned post-MVP
+
+- [ ] Dark theme with system-preference support and an explicit user toggle.
+- [ ] Preserve accessible contrast across both themes.
+
+---
+
 ## Responsive/accessibility
 
 Status: Implemented for place selection; broader journey flow planned
