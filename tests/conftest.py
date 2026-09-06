@@ -1,10 +1,22 @@
 """Share offline HTTP safeguards and captured CTAN fixture locations across tests."""
 
+from collections.abc import Iterator
 from pathlib import Path
 from typing import Never
 
 import httpx
 import pytest
+from django.core.cache import cache
+
+from transport.services import places as service
+
+
+@pytest.fixture(autouse=True)
+def isolated_place_cache() -> Iterator[None]:
+    """Clear only the place-catalogue key before and after each test to prevent state leaks."""
+    cache.delete(service.CACHE_KEY)
+    yield
+    cache.delete(service.CACHE_KEY)
 
 
 @pytest.fixture(autouse=True)

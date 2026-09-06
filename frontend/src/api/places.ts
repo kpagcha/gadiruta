@@ -1,4 +1,4 @@
-/** Typed access to Gadiruta's public places API; never contact CTAN from the browser. */
+/** Typed access to Gadiruta's public places API; never contact upstream providers from the browser. */
 
 /** A selectable population centre using Gadiruta's opaque public identity. */
 export interface Place {

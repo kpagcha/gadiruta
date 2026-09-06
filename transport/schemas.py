@@ -1,4 +1,4 @@
-"""Public transport response schemas, independent of CTAN's payloads."""
+"""Public transport response schemas, independent of provider payloads."""
 
 from datetime import datetime
 from typing import Literal

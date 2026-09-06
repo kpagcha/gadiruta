@@ -14,7 +14,7 @@ Status: Implemented
 
 - [x] Existing Django project configured for PostgreSQL and environment-based settings.
 - [x] Versioned Django Ninja API with typed application liveness response.
-- [x] Generated OpenAPI schema and interactive Scalar API documentation.
+- [x] Generated OpenAPI schema and interactive Scalar API documentation with global data attribution.
 - [x] Locked dependencies, pytest, Ruff lint/format checks, and mypy type checks.
 
 The CTAN place-search backend and English/Spanish place-selection homepage are implemented.
@@ -74,6 +74,7 @@ Status: Population-centre search API and autocomplete implemented; detail pages 
 - [x] Search Cádiz population centres by name or municipality, ignoring case and accents.
 - [x] Ranked, limited results with stable Gadiruta IDs and optional municipality names.
 - [x] One-hour catalogue cache and fetch timestamps.
+- [x] Provider-neutral catalogue/search boundary with CTAN as the current place-data implementation.
 - [x] Validated CTAN responses, saved fixtures, and offline error/timeout/cache tests.
 - [x] Distinguish empty results from unavailable provider data.
 - [x] Select population centres in the homepage autocomplete, with municipality and fetch timestamp.
@@ -204,9 +205,9 @@ Status: Out of MVP
 Status: Liveness and place search implemented; other transport resources planned
 
 The versioned API exposes application liveness, population-centre search, and generated
-documentation. Liveness does not imply PostgreSQL or CTAN availability. See `docs/development.md`
+documentation. Liveness does not imply PostgreSQL or provider availability. See `docs/development.md`
 for local URLs. Place search uses the default per-process cache, not persistent storage; cold or
-expired-cache requests return a stable unavailability response if CTAN cannot supply usable data.
+expired-cache requests return a stable unavailability response if the place provider cannot supply usable data.
 
 Remaining potential resources:
 

@@ -238,9 +238,14 @@ Representative upstream responses live under:
 tests/fixtures/ctan/
 ```
 
-The fixture README and `metadata.json` record provenance. Tests use `httpx.MockTransport` and the
+The fixture README and `metadata.json` record provenance. CTAN tests use `httpx.MockTransport` and the
 default test fixture rejects live HTTPX transport calls. Cache tests isolate the place-catalogue
 key; they do not require PostgreSQL or an external cache service.
+
+Provider-neutral catalogue/API tests use a structural `PlaceProvider` stub instead of CTAN
+fixtures. Replace the service's provider factory in these tests; do not patch HTTP clients into
+the service layer. Concrete implementation selection belongs in `transport/providers/wiring.py`.
+Keep CTAN parsing and error-translation tests alongside the integration tests.
 
 When adding a fixture:
 
@@ -257,6 +262,9 @@ Live CTAN integration tests, if added, should be clearly separated from the defa
 ## API documentation
 
 Gadiruta's own API reference uses Scalar to display Django Ninja's generated OpenAPI schema.
+
+Maintain transport-data attribution and the independence disclaimer in the top-level
+`NinjaAPI(description=...)` in `gadiruta/api.py`, not in individual endpoint descriptions.
 
 When adding or changing an endpoint:
 

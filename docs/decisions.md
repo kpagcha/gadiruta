@@ -230,8 +230,9 @@ application policy, not a verified CTAN refresh interval.
 
 Use UUIDv5 with `uuid.NAMESPACE_URL` and the name
 `urn:gadiruta:place:ctan:2:population-centre:{canonical_upstream_id}` for public place IDs. The
-canonical upstream ID is its positive decimal representation without leading zeroes. Retain
-provider, consortium, and upstream identifiers separately in the internal domain model.
+canonical upstream ID is its positive decimal representation without leading zeroes. Provider
+references initially lived in the internal domain model; the capability-boundary decision below
+supersedes that placement without changing the public IDs.
 
 Consequences:
 
@@ -241,3 +242,38 @@ Consequences:
 - Cache contents are not shared across workers or preserved across process restarts. A production
   caching/synchronization strategy will need review before deployment.
 - The first places resource represents population centres only, not physical stops.
+
+---
+
+## 2026-09-06 — Capability-specific provider boundary and global attribution
+
+Context:
+
+Place services constructed the CTAN client and assembled its records, while API handlers caught
+CTAN exceptions. The internal `Place` also carried consortium and zone fields unused by search.
+These dependencies made the application contract unnecessarily specific to its first provider.
+
+Decision:
+
+Use a small `PlaceProvider` protocol returning normalized places and a neutral `ProviderError`.
+Select `CTANPlaceProvider` in one explicit wiring module. The CTAN integration owns HTTP clients,
+record validation, municipality joins, stable ID derivation, and exception translation. Services
+own search, cache policy, and fetch timestamps; API handlers own the public error response.
+
+Keep `Place` limited to the public identity and normalized labels currently needed by the domain.
+Provider references remain in integration records, not a speculative generic metadata container.
+Add other capability contracts only when implemented; do not introduce a universal provider interface.
+
+Publish data attribution and the independence disclaimer globally in the API overview and existing
+web footer. Endpoint descriptions explain behavior without repeating source acknowledgements.
+
+Consequences:
+
+- Existing public UUIDs, response shapes, ranking, one-hour caching, and error behavior are unchanged.
+- A provider-neutral, versioned catalogue cache key replaces the CTAN-scoped key and avoids reusing
+  snapshots with the old internal domain shape.
+- Services and API tests can use a structural provider stub without CTAN metadata or HTTP.
+- CTAN errors retain their chained cause inside the integration, but public responses and API logs
+  expose no upstream details.
+- Multi-provider merging and reverse mapping of public IDs for future capabilities remain separate
+  design work; neither is required for today's place catalogue.

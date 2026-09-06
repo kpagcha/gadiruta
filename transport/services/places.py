@@ -6,10 +6,9 @@ from django.core.cache import cache
 from django.utils import timezone
 
 from transport.domain import Place, PlaceCatalog, PlaceSearchResult
-from transport.integrations.ctan.adapters import to_places
-from transport.integrations.ctan.client import CTANClient
+from transport.providers.wiring import get_place_provider
 
-CACHE_KEY = "gadiruta:ctan:2:places:v1"
+CACHE_KEY = "gadiruta:places:catalog:v2"
 CACHE_TTL_SECONDS = 60 * 60
 
 
@@ -21,19 +20,17 @@ def fold_text(value: str) -> str:
 
 
 def get_place_catalog() -> PlaceCatalog:
-    """Return a cached snapshot or fetch and cache a validated CTAN catalogue.
+    """Return a cached Gadiruta snapshot or retrieve normalized places from its provider.
 
     Successful snapshots, including empty ones, are cached for one hour. Provider failures
-    propagate as CTANError without being cached; expired snapshots are not served as a fallback.
+    propagate as ProviderError without being cached; expired snapshots are not served as a fallback.
     """
     cached = cache.get(CACHE_KEY)
     if isinstance(cached, PlaceCatalog):
         return cached
 
-    with CTANClient() as client:
-        centres = client.list_population_centres()
-        municipalities = client.list_municipalities() if centres else []
-    catalog = PlaceCatalog(places=to_places(centres, municipalities), fetched_at=timezone.now())
+    places = get_place_provider().get_places()
+    catalog = PlaceCatalog(places=places, fetched_at=timezone.now())
     cache.set(CACHE_KEY, catalog, timeout=CACHE_TTL_SECONDS)
     return catalog
 
@@ -43,7 +40,7 @@ def search_places(query: str, limit: int = 10) -> PlaceSearchResult:
 
     Prefer exact centre names, prefixes, other name matches, then municipality matches.
     Queries shorter than two normalized characters skip catalogue retrieval. Callers must
-    validate a positive limit; provider retrieval failures propagate as CTANError.
+    validate a positive limit; provider retrieval failures propagate as ProviderError.
     """
     query = fold_text(query)
     if len(query) < 2:

@@ -20,7 +20,7 @@ def read_centres(payload: object) -> list[PopulationCentre]:
 
 
 def test_saved_catalogue_preserves_names_and_provider_relationships(ctan_fixture_dir: Path) -> None:
-    """Normalize captured centres and municipalities without losing names or provider references."""
+    """Keep provider relationships in validated records and export normalized display labels."""
     requests: list[httpx.Request] = []
 
     def respond(request: httpx.Request) -> httpx.Response:
@@ -38,11 +38,10 @@ def test_saved_catalogue_preserves_names_and_provider_relationships(ctan_fixture
     assert all(place.municipality for place in places)
     airport = next(place for place in places if place.name == "Aeropuerto")
     assert airport.municipality == "Jerez de la Frontera"
-    assert airport.provider == "ctan"
-    assert airport.consortium_id == 2
-    assert airport.upstream_id == "42"
-    assert airport.upstream_municipality_id == "6"
-    assert airport.upstream_zone == "K"
+    airport_record = next(centre for centre in centres if centre.name == "Aeropuerto")
+    assert airport_record.upstream_id == "42"
+    assert airport_record.municipality_id == "6"
+    assert airport_record.zone == "K"
     assert [str(request.url) for request in requests] == [
         "https://api.ctan.es/v1/Consorcios/2/nucleos",
         "https://api.ctan.es/v1/Consorcios/2/municipios/",
@@ -107,8 +106,8 @@ def test_missing_or_invalid_optional_fields_preserve_the_place(
     place = to_places(centres, [])[0]
     assert place.name == "Cádiz"
     assert place.municipality is None
-    assert place.upstream_municipality_id is None
-    assert place.upstream_zone is None
+    assert centres[0].municipality_id is None
+    assert centres[0].zone is None
 
 
 @pytest.mark.parametrize(

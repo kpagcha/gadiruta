@@ -10,6 +10,14 @@ from transport.api import router as places_router
 
 api = NinjaAPI(
     title="Gadiruta API",
+    description=(
+        "Public transport information for the Cádiz area.\n\n"
+        "Transport information is provided by the "
+        "[Portal de Datos Abiertos de la Red de Consorcios de Transporte de Andalucía]"
+        "(https://api.ctan.es/doc/).\n\n"
+        "Gadiruta is an independent application, not an official CTAN or Junta de Andalucía "
+        "service. No endorsement or affiliation is implied."
+    ),
     version="1.0.0",
     urls_namespace="api-v1",
     docs=ScalarViewer(

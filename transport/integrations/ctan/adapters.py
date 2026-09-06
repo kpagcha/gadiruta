@@ -10,7 +10,7 @@ from transport.integrations.ctan.schemas import Municipality, PopulationCentre
 def to_places(
     centres: list[PopulationCentre], municipalities: list[Municipality]
 ) -> tuple[Place, ...]:
-    """Join municipality names and assign stable public IDs while retaining provider references.
+    """Join municipality names and assign stable public IDs, keeping CTAN fields internal.
 
     Missing municipality relationships yield an unknown label rather than dropping the centre.
     Public identity depends only on the scoped provider ID, not labels or record order.
@@ -25,11 +25,6 @@ def to_places(
             ),
             name=centre.name,
             municipality=names.get(centre.municipality_id) if centre.municipality_id else None,
-            provider="ctan",
-            consortium_id=CONSORTIUM_ID,
-            upstream_id=centre.upstream_id,
-            upstream_municipality_id=centre.municipality_id,
-            upstream_zone=centre.zone,
         )
         for centre in centres
     )

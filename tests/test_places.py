@@ -1,7 +1,6 @@
 """Exercise cached place search through Django with an offline CTAN transport."""
 
 import json
-from collections.abc import Iterator
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -12,7 +11,7 @@ import pytest
 from django.core.cache import cache
 from django.test import Client
 
-from transport.integrations.ctan.client import CTANClient
+from transport.integrations.ctan.provider import CTANPlaceProvider
 from transport.services import places as service
 
 NUCLEOS = "/v1/Consorcios/2/nucleos"
@@ -35,17 +34,9 @@ class CTANMock:
         return response
 
 
-@pytest.fixture(autouse=True)
-def isolated_place_cache() -> Iterator[None]:
-    """Clear only the place-catalogue key before and after each test to prevent state leaks."""
-    cache.delete(service.CACHE_KEY)
-    yield
-    cache.delete(service.CACHE_KEY)
-
-
 @pytest.fixture
 def ctan(monkeypatch: pytest.MonkeyPatch, ctan_fixture_dir: Path) -> CTANMock:
-    """Route service calls through a configurable offline client seeded with saved responses."""
+    """Exercise the real CTAN provider through the API using saved offline HTTP responses."""
     upstream = CTANMock(
         responses={
             NUCLEOS: httpx.Response(200, content=(ctan_fixture_dir / "nucleos.json").read_bytes()),
@@ -55,7 +46,9 @@ def ctan(monkeypatch: pytest.MonkeyPatch, ctan_fixture_dir: Path) -> CTANMock:
         }
     )
     monkeypatch.setattr(
-        service, "CTANClient", lambda: CTANClient(transport=httpx.MockTransport(upstream.respond))
+        service,
+        "get_place_provider",
+        lambda: CTANPlaceProvider(transport=httpx.MockTransport(upstream.respond)),
     )
     return upstream
 

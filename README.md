@@ -39,12 +39,17 @@ Browser / React
        ↓
   Django API
        ↓
-  CTAN adapter
+ Transport domain/services
+       ↓
+ PlaceProvider capability
+       ↓
+  CTAN integration
        ↓
     CTAN API
 ```
 
-The frontend never depends directly on the CTAN API.
+The frontend uses Gadiruta's API, and services consume normalized provider capabilities.
+CTAN is the current place-data implementation, not the application/domain contract.
 
 ## Documentation
 

@@ -11,7 +11,9 @@ Browser / React
        ↓
  Transport domain/services
        ↓
-  CTAN adapter
+ PlaceProvider capability
+       ↓
+  CTAN integration
        ↓
     CTAN API
 ```
@@ -67,11 +69,15 @@ transport/
     domain.py
     services/
         places.py
+    providers/
+        base.py
+        wiring.py
     integrations/
         ctan/
             client.py
             schemas.py
             adapters.py
+            provider.py
 ```
 
 Responsibilities:
@@ -87,7 +93,21 @@ Responsibilities:
 
 - Implement transport-related application behavior.
 - Avoid direct coupling to HTTP or React concerns.
-- Coordinate normalized provider data.
+- Coordinate normalized provider data through capability-specific contracts.
+- Own catalogue caching, freshness timestamps, and local search ranking.
+
+### Provider capability boundary
+
+`PlaceProvider` in `transport/providers/base.py` defines only the implemented place capability:
+`get_places()` returns normalized `Place` values or raises `ProviderError`. Implementations own
+retrieval, normalization, and resource cleanup; the application owns caching and search behavior.
+
+`transport/providers/wiring.py` is the explicit composition point that selects `CTANPlaceProvider`
+for Cádiz. Services call this factory without importing the concrete integration. API handlers
+catch `ProviderError` and return application-level errors without logging provider error details.
+
+Add other capability contracts only when needed; there is no monolithic transport provider,
+provider registry, dynamic selection, or multi-provider catalogue aggregation yet.
 
 ### CTAN integration layer
 
@@ -95,13 +115,17 @@ Responsibilities:
 - Parse and validate CTAN responses.
 - Normalize provider-specific fields.
 - Isolate CTAN-specific identifiers and quirks.
+- Join centre/municipality records and assign opaque, stable public place IDs.
+- Translate CTAN exceptions to `ProviderError` at the capability implementation boundary.
 
 Raw CTAN payloads must not become Gadiruta's public API contract.
 
-The HTTP client validates provider records with Pydantic. The adapter produces immutable domain
-values with separate provider references and public Gadiruta IDs. Place search joins municipality
-names, caches the normalized catalogue, and performs local accent-insensitive matching and ranking.
-The API explicitly selects public fields; upstream identifiers and zone fields remain internal.
+The HTTP client validates provider records with Pydantic. CTAN identifiers, relationships, and zone
+fields remain in integration records. The adapter produces immutable domain values containing only
+an opaque public ID, name, and optional municipality label. `CTANPlaceProvider` fetches and joins
+the required resources, skipping municipality retrieval when there are no centres. Place services
+cache the normalized catalogue and perform local accent-insensitive matching and ranking.
+The API explicitly selects public fields and does not interpret provider identity.
 The transport package has no Django models or migrations yet.
 
 ---
@@ -190,10 +214,13 @@ native requirements emerge that the browser/PWA platform cannot satisfy adequate
 ## API boundary
 
 The frontend calls Gadiruta's Django API, mounted at `/api/v1/`. Application liveness deliberately
-does not contact a database or upstream provider. Place search uses the CTAN adapter on cache
+does not contact a database or upstream provider. Place search uses the configured place provider on cache
 misses and does not require a database. The remaining resource plans are in `docs/features.md`.
 
-Django Ninja/OpenAPI is the canonical endpoint-level reference.
+Django Ninja/OpenAPI is the canonical endpoint-level reference. Source attribution and the
+independence disclaimer appear once in the top-level API description, also displayed by Scalar.
+Endpoint descriptions focus on their own behavior. The web application retains its global footer
+attribution and disclaimer.
 
 ---
 
@@ -206,6 +233,10 @@ individual records are skipped, but a nonempty response containing no usable rec
 An unexpired catalogue can serve requests during provider outages. There is no stale-on-error
 fallback after expiry, background refresh, or shared multi-worker cache yet. Concurrent cold
 requests can perform duplicate fetches.
+
+The versioned cache key identifies Gadiruta's catalogue, not a CTAN endpoint or consortium. Its
+version changes when the cached domain shape changes. Revisit the namespace if provider selection
+becomes configurable or catalogues are shared across deployments.
 
 Public place IDs use deterministic UUIDs derived from scoped provider identity, independently of
 display names and catalogue order; see `docs/decisions.md`. No transport data is persisted yet.
@@ -268,13 +299,14 @@ title, and fetch timestamps follow the active locale.
 
 ## Testing boundaries
 
-Normal automated tests should not depend on live CTAN availability.
+Normal automated tests should not depend on live provider availability.
 
-Use representative saved CTAN fixtures for:
+Service/API boundary tests use a small structural `PlaceProvider` stub with normalized places and
+neutral errors, without CTAN fields or HTTP. They cover ranking, caching, empty results, short
+queries, and safe error responses independently of the current integration.
 
-- Integration adapter tests.
-- Normalization tests.
-- Django API tests.
+Saved CTAN fixtures and mock HTTP transports cover the client, adapters, concrete provider, and
+end-to-end API regressions. Provider tests also verify error translation and HTTP resource cleanup.
 
 Live CTAN calls are appropriate during discovery and optionally through explicitly separated integration tests.
 
@@ -292,7 +324,8 @@ Future routing may use GTFS for:
 - Earliest-arrival calculation.
 - Full journey planning.
 
-The current CTAN/Django API boundary should not make a future GTFS-backed routing engine difficult to introduce.
+Capability-specific provider boundaries should allow a future GTFS-backed routing implementation
+without requiring it to supply unrelated capabilities or exposing its format through Gadiruta's API.
 
 ---
 

@@ -40,3 +40,20 @@ def test_interactive_docs_are_available(client: Client) -> None:
 
     assert response.status_code == 200
     assert b"/api/v1/openapi.json" in response.content
+
+
+def test_attribution_is_global_instead_of_repeated_per_endpoint(client: Client) -> None:
+    """Publish source attribution and independence once in the generated API overview."""
+    schema = client.get("/api/v1/openapi.json").json()
+    description = schema["info"]["description"]
+    assert (
+        "Portal de Datos Abiertos de la Red de Consorcios de Transporte de Andalucía" in description
+    )
+    assert "https://api.ctan.es/doc/" in description
+    assert "independent application" in description
+    assert "not an official CTAN or Junta de Andalucía service" in description
+    for path in ("/api/v1/places", "/api/v1/health"):
+        operation_description = schema["paths"][path]["get"]["description"]
+        assert "CTAN" not in operation_description
+        assert "Portal de Datos Abiertos" not in operation_description
+        assert "independent application" not in operation_description
