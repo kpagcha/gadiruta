@@ -113,6 +113,8 @@ Stack:
 - React 19.
 - TypeScript.
 - Vite.
+- Tailwind CSS 4 through the Vite plugin.
+- Lucide React for interface icons.
 - React Router.
 - TanStack Query.
 - react-i18next.
@@ -142,6 +144,10 @@ Responsibilities:
 - Responsive presentation.
 - Localization.
 - localStorage-based language preference. Recent searches and favorites are not implemented yet.
+
+Tailwind utility classes provide component-level layout and visual styling. The shared stylesheet keeps only global
+font/base/accessibility rules, design tokens, and small custom CSS that is clearer outside JSX. Lucide React supplies
+the shared interface icon set; icons remain decorative unless their surrounding control provides an accessible name.
 
 React Router supplies the homepage and a localized not-found page. Each autocomplete keeps draft
 text separate from a confirmed public place identity. TanStack Query shares suggestion results

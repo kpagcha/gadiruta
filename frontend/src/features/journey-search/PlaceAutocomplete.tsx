@@ -102,10 +102,14 @@ export function PlaceAutocomplete({
   }
 
   const fetchedAt = search.data?.fetched_at;
+  const endpointMarkClass =
+    endpoint === 'destination'
+      ? 'size-2.25 rounded-xs border-2 border-accent bg-accent'
+      : 'size-2.25 rounded-full border-2 border-accent';
 
   return (
     <div
-      className={`place-field ${showPopup ? 'place-field--open' : ''}`}
+      className={`relative min-w-0 ${showPopup ? 'z-5' : ''}`}
       onBlur={(event) => {
         if (!event.currentTarget.contains(event.relatedTarget)) {
           setIsOpen(false);
@@ -113,11 +117,13 @@ export function PlaceAutocomplete({
         }
       }}
     >
-      <label className="field-label" htmlFor={id}>
-        <span className={`endpoint-mark endpoint-mark--${endpoint}`} aria-hidden="true" />
+      <label className="mb-2 flex items-center gap-2.25 text-[13px] font-[650]" htmlFor={id}>
+        <span className={endpointMarkClass} aria-hidden="true" />
         {label}
       </label>
-      <div className={`input-shell ${value.place ? 'input-shell--selected' : ''}`}>
+      <div
+        className={`place-field flex items-center rounded-xl border bg-white focus-within:shadow-field-focus ${value.place ? 'bg-surface-input' : ''}`}
+      >
         <input
           ref={inputRef}
           id={id}
@@ -144,27 +150,31 @@ export function PlaceAutocomplete({
           onCompositionStart={() => setIsComposing(true)}
           onCompositionEnd={() => setIsComposing(false)}
           onKeyDown={handleKeyDown}
+          className="w-full min-w-0 flex-1 rounded-xl border-0 bg-transparent px-0 py-4.5 pl-4 text-[17px] outline-none placeholder:text-muted-soft focus-visible:outline-offset-0 max-[380px]:pl-3 max-[380px]:text-base"
         />
         {value.text && (
           <button
             type="button"
-            className="clear-button"
+            className="m-1 grid size-11 shrink-0 place-items-center rounded-lg border-0 bg-transparent text-muted transition-colors hover:bg-surface-hover hover:text-ink"
             aria-label={clearLabel}
             onClick={clearPlace}
           >
-            <Icon name="close" />
+            <Icon name="close" size={17} />
           </button>
         )}
         {!value.text && (
-          <span className="input-icon">
-            <Icon name="pin" />
+          <span className="grid size-12 shrink-0 place-items-center text-icon-muted">
+            <Icon name="pin" size={19} />
           </span>
         )}
       </div>
-      <p id={`${id}-help`} className="field-help">
+      <p
+        id={`${id}-help`}
+        className="mt-2 flex min-h-4.5 items-start gap-1 text-xs leading-normal text-muted"
+      >
         {value.place ? (
           <>
-            <Icon name="check" />
+            <Icon name="check" className="mt-px size-3.75 shrink-0 text-accent" />
             {value.place.municipality ?? value.place.name}
           </>
         ) : (
@@ -179,8 +189,13 @@ export function PlaceAutocomplete({
       </span>
 
       {showPopup && (
-        <div className="suggestions-panel">
-          <ul id={listId} role="listbox" aria-label={t('places.suggestions', { field: label })}>
+        <div className="absolute top-[calc(100%-20px)] right-0 left-0 z-10 overflow-hidden rounded-xl border border-line-popover bg-white shadow-popover">
+          <ul
+            id={listId}
+            className={`m-0 max-h-68.75 list-none overflow-y-auto overscroll-contain ${options.length ? 'p-1.25' : 'p-0'}`}
+            role="listbox"
+            aria-label={t('places.suggestions', { field: label })}
+          >
             {options.map((place) => (
               <li key={place.id} role="presentation">
                 <button
@@ -193,37 +208,47 @@ export function PlaceAutocomplete({
                   onMouseDown={(event) => event.preventDefault()}
                   onPointerMove={() => setActiveId(place.id)}
                   onClick={() => selectPlace(place)}
+                  className="flex min-h-15 w-full items-center gap-2.5 rounded-[7px] border-0 px-2.25 py-3 text-left hover:bg-surface-selected hover:text-accent-strong aria-selected:bg-surface-selected aria-selected:text-accent-strong"
                 >
-                  <span className="suggestion-icon">
-                    <Icon name="pin" />
+                  <span className="shrink-0 basis-5.75 text-icon-accent">
+                    <Icon name="pin" size={20} />
                   </span>
-                  <span className="suggestion-text">
-                    <span className="suggestion-name">{place.name}</span>
+                  <span className="grid min-w-0 flex-1 gap-0.75 wrap-anywhere">
+                    <span className="text-[15px] font-semibold">{place.name}</span>
                     {place.municipality && (
-                      <span className="suggestion-municipality">{place.municipality}</span>
+                      <span className="text-xs text-muted">{place.municipality}</span>
                     )}
                   </span>
-                  <Icon name="arrow" />
+                  <Icon name="arrow" className="size-4 shrink-0 text-icon-strong" />
                 </button>
               </li>
             ))}
           </ul>
           {isLoading ? (
-            <p className="suggestion-message">
-              <span className="spinner" aria-hidden="true" />
+            <p className="flex items-center gap-2.5 px-4.5 py-4.5 text-sm leading-normal wrap-anywhere text-muted">
+              <Icon
+                name="loader"
+                className="size-3.75 shrink-0 animate-spin text-accent motion-reduce:animate-none"
+              />
               {t('places.loading')}
             </p>
           ) : search.isError ? (
-            <div className="suggestion-message suggestion-message--error">
+            <div className="block px-4.5 py-4.5 text-sm leading-normal wrap-anywhere text-muted">
               <p>{t('places.error')}</p>
-              <button type="button" className="text-button" onClick={() => void search.refetch()}>
+              <button
+                type="button"
+                className="mt-2 inline-flex min-h-11 items-center bg-transparent px-1.25 text-sm font-[650] text-accent underline decoration-1 underline-offset-4"
+                onClick={() => void search.refetch()}
+              >
                 {t('places.retry')}
               </button>
             </div>
           ) : !options.length ? (
-            <p className="suggestion-message">{t('places.empty', { query: value.text.trim() })}</p>
+            <p className="flex items-center gap-2.5 px-4.5 py-4.5 text-sm leading-normal wrap-anywhere text-muted">
+              {t('places.empty', { query: value.text.trim() })}
+            </p>
           ) : fetchedAt ? (
-            <p className="suggestions-fetched">
+            <p className="border-t border-line-subtle px-3.5 py-2.5 text-[11px] leading-normal text-muted">
               {t('places.fetchedAt', {
                 time: new Intl.DateTimeFormat(i18n.resolvedLanguage, {
                   dateStyle: 'medium',

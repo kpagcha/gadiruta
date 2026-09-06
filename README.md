@@ -26,6 +26,8 @@ The MVP focuses on making official CTAN transport data easier to use for:
 - React 19
 - TypeScript
 - Vite
+- Tailwind CSS
+- Lucide React
 - React Router
 - TanStack Query
 - react-i18next

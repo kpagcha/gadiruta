@@ -112,6 +112,8 @@ Stack:
 - React 19.
 - TypeScript.
 - Vite.
+- Tailwind CSS 4 through the Vite plugin.
+- Lucide React for interface icons.
 - React Router.
 - TanStack Query.
 - react-i18next.
@@ -139,7 +141,13 @@ npm --prefix frontend run preview
 ```
 
 ESLint covers JavaScript/TypeScript and React hook rules; Prettier covers frontend source and
-configuration. The build also runs the TypeScript check. TypeScript stays on 6.0 while the selected
+configuration, with the official `prettier-plugin-tailwindcss` sorting Tailwind class lists using
+the theme in `frontend/src/styles/app.css`. Run `npm --prefix frontend run format` after changing
+utility classes; the check-only hook verifies the resulting order. Tailwind CSS utility classes are
+the primary component styling mechanism. Keep
+`frontend/src/styles/app.css` for the font, global base/accessibility rules, design tokens, and small
+custom CSS that does not benefit from a utility class. The build also runs the TypeScript check.
+TypeScript stays on 6.0 while the selected
 typescript-eslint version supports versions below 6.1. No frontend automated test runner is configured;
 interaction tests are deferred as described in `docs/features.md`. Use the checks above and manual
 browser verification for current frontend changes.
