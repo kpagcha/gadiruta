@@ -18,16 +18,18 @@ Status: Implemented
 - [x] Locked dependencies, pytest, Ruff lint/format checks, and mypy type checks.
 
 The CTAN place-search backend and English/Spanish place-selection homepage are implemented.
-Direct-service lookup is the next functional slice; it requires upstream timetable/calendar
-discovery before implementation. Automated frontend interaction tests (such as autocomplete,
-swapping, and language-switching tests) are deferred as low priority and do not block current
-milestones. Frontend verification uses static checks and manual browser checks for now.
+Direct-service lookup is the next functional slice. CTAN discovery has verified the candidate-line
+and dated-timetable composition; implementation must define a safe date policy because CTAN's
+holiday handling and year selection are unreliable. Automated frontend interaction tests (such as
+autocomplete, swapping, and language-switching tests) are deferred as low priority and do not
+block current milestones. Frontend verification uses static checks and manual browser checks for
+now.
 
 ---
 
 ## Journey search
 
-Status: Place selection implemented; journey lookup planned
+Status: Place selection implemented; CTAN discovery complete; journey lookup planned
 
 - [x] Origin autocomplete.
 - [x] Destination autocomplete.
@@ -46,6 +48,9 @@ Notes:
 
 - MVP supports direct journeys only.
 - Routes requiring transfers must not be presented as impossible; they are simply unsupported in the MVP.
+- Direct lookup will use `horarios_origen_destino` to find candidate lines, then dated
+  `horarios_lineas` requests to extract usable services. See `docs/ctan-api.md` for upstream
+  constraints and extraction rules.
 - Place suggestions support loading, empty, and retryable error states. Typing clears any previous
   selection; users must select a suggestion to confirm a place. Choosing the same origin and
   destination displays a warning. The homepage explicitly says journey search is not available yet.
