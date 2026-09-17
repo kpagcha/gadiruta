@@ -87,6 +87,14 @@ variables or runner arguments. If Django support is enabled, enable **Do not use
 runner** and create/select a pytest run configuration; existing Django test configurations still
 use Django's runner and bypass pytest configuration. Run `uv sync --locked` after dependency changes.
 
+Shared PyCharm configurations live in `.run/`: **gadiruta** starts the Django server with the
+project interpreter, loads the untracked `$PROJECT_DIR$/.env` file, and listens on port 8000;
+**gadiruta frontend** runs the `dev` script from `frontend/package.json` with the project Node
+runtime and serves Vite on port 5173. Open the project in PyCharm, select/configure the project
+Python interpreter and Node runtime, then choose the relevant configuration in the
+run-configuration menu. The configurations contain no environment values, secrets, or
+machine-specific runtime paths.
+
 Database access in pytest requires an explicit `django_db` marker or `db` fixture; future database
 tests must use PostgreSQL and a role that can create the test database. Supply the database
 connection with `uv run --locked --env-file .env pytest` when running those tests.
