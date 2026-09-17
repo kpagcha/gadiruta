@@ -18,7 +18,7 @@ const STORAGE_KEY = 'gadiruta.theme';
 const MEDIA_QUERY = '(prefers-color-scheme: dark)';
 const THEME_COLORS: Record<ResolvedTheme, string> = {
   light: '#f7f6f0',
-  dark: '#102324',
+  dark: '#0e191a',
 };
 
 /** Check whether a stored value is one of the supported theme choices. */

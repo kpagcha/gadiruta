@@ -75,7 +75,7 @@
 
   [data-theme='dark'] {
     color-scheme: dark;
-    --color-paper: #102324;
+    --color-paper: #0e191a;
     --color-ink: #edf5ef;
     --color-muted: #a8bab3;
     --color-muted-soft: #9bafa7;
@@ -98,10 +98,10 @@
     --color-surface-hover-strong: #294b43;
     --color-surface-selected: #2d5149;
     --color-surface-input: #203c38;
-    --color-surface-card: #183432;
-    --color-on-accent: #102324;
+    --color-surface-card: #142425;
+    --color-on-accent: #0e191a;
     --color-focus: #f0a16d;
-    --shadow-card: 0 14px 50px -35px #071516aa;
+    --shadow-card: 0 12px 20px -18px #071516aa;
     --shadow-popover: 0 18px 35px -12px #071516cc;
     --shadow-field-focus: 0 0 0 3px #79cbc233;
   }
