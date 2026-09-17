@@ -42,6 +42,68 @@ Frontend prerequisites: Node.js 24 (24.11.1 or newer within that major) and npm 
 
 ---
 
+## Quick start
+
+Use these steps for a first-time local setup. Run the commands from the repository root in
+PowerShell. Start Docker Desktop before creating the database container.
+
+1. Install the backend dependencies and create a private environment file:
+
+   ```powershell
+   uv sync --locked
+   Copy-Item .env.example .env
+   uv run --locked python -c "import secrets; print(secrets.token_urlsafe(50))"
+   ```
+
+   Put the generated value in `.env` as `DJANGO_SECRET_KEY`. Do not commit `.env`.
+
+2. Start a PostgreSQL 16 container. PostgreSQL 15 or newer is supported. Replace
+   `local-dev-password` with a password for this local database:
+
+   ```powershell
+   docker run --name gadiruta-postgres `
+     --env POSTGRES_DB=gadiruta `
+     --env POSTGRES_USER=gadiruta `
+     --env POSTGRES_PASSWORD=local-dev-password `
+     --publish 5432:5432 `
+     --volume gadiruta-postgres-data:/var/lib/postgresql/data `
+     --detach postgres:16
+   ```
+
+   In `.env`, set `POSTGRES_PASSWORD` to the same password. The remaining `POSTGRES_*` values
+   from `.env.example` already match this container.
+
+3. Apply migrations and create an optional administrator account for `/admin/`:
+
+   ```powershell
+   uv run --locked --env-file .env python manage.py migrate
+   uv run --locked --env-file .env python manage.py createsuperuser
+   ```
+
+4. Start the API in one terminal:
+
+   ```powershell
+   uv run --locked --env-file .env python manage.py runserver
+   ```
+
+   The API is available at http://127.0.0.1:8000, and its interactive documentation is at
+   http://127.0.0.1:8000/api/v1/docs.
+
+5. Install and start the frontend in a second terminal:
+
+   ```powershell
+   npm --prefix frontend ci
+   npm --prefix frontend run dev
+   ```
+
+   Open http://127.0.0.1:5173. Vite forwards `/api/` requests to the API server on port 8000.
+
+On later sessions, start the existing database container with
+`docker start gadiruta-postgres`, then start the API and frontend from steps 4 and 5. PyCharm can
+start the two application processes through the shared configurations described below.
+
+---
+
 ## Backend
 
 Run all commands from the repository root. `uv.lock` records exact dependency versions; Django
