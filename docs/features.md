@@ -18,43 +18,48 @@ Status: Implemented
 - [x] Locked dependencies, pytest, Ruff lint/format checks, and mypy type checks.
 - [x] Persistent canonical place IDs and provider-reference crosswalks.
 
-The CTAN place-search backend and English/Spanish place-selection homepage are implemented.
-Direct-service lookup is the next functional slice. CTAN discovery has verified the candidate-line
-and dated-timetable composition; implementation must define a safe date policy because CTAN's
-holiday handling and year selection are unreliable. Automated frontend interaction tests (such as
-autocomplete, swapping, and language-switching tests) are deferred as low priority and do not
-block current milestones. Frontend verification uses static checks and manual browser checks for
-now.
+The CTAN place-search and direct-journey backends, plus the English/Spanish search homepage, are
+implemented. Direct lookup is limited to dates from today through the current Europe/Madrid
+calendar year because CTAN has no reliable year parameter and mishandles observed holidays.
+Automated frontend interaction tests (such as autocomplete, swapping, and language-switching
+tests) are deferred as low priority and do not block current milestones. Frontend verification uses
+static checks and manual browser checks for now.
 
 ---
 
 ## Journey search
 
-Status: Place selection implemented; CTAN discovery complete; journey lookup planned
+Status: Initial direct journey search implemented
 
 - [x] Origin autocomplete.
 - [x] Destination autocomplete.
 - [x] Swap origin/destination, including partially typed input.
-- [ ] Date selection.
-- [ ] Time selection/filtering.
-- [ ] Direct service lookup.
-- [ ] Journey result cards.
-- [ ] Loading state.
-- [ ] Empty state.
-- [ ] Error state.
-- [ ] Search state in URL.
-- [ ] Shareable/bookmarkable searches.
+- [x] Date selection, from today through the current local calendar year.
+- [x] Optional “depart at or after” time filtering.
+- [x] Direct service lookup through the active direct-journey provider.
+- [x] Journey result cards with line code, departure, arrival, duration, and source note when present.
+- [x] Loading state.
+- [x] Cautious empty state.
+- [x] Retryable error state.
+- [x] Search state in URL.
+- [x] Shareable/bookmarkable searches.
 
 Notes:
 
 - MVP supports direct journeys only.
 - Routes requiring transfers must not be presented as impossible; they are simply unsupported in the MVP.
-- Direct lookup will use `horarios_origen_destino` to find candidate lines, then dated
-  `horarios_lineas` requests to extract usable services. See `docs/ctan-api.md` for upstream
-  constraints and extraction rules.
+- Direct lookup uses `horarios_origen_destino` to find candidate lines, then dated
+  `horarios_lineas` requests to extract usable services. It fails rather than showing a partial
+  timetable if any candidate lookup fails. See `docs/ctan-api.md` for upstream constraints and
+  extraction rules.
+- CTAN's exact no-data response is shown as “no direct services returned”; it is not evidence that
+  no public-transport trip exists. The UI explicitly says transfers are unsupported.
+- CTAN's calendar selection can be inaccurate on public holidays, so every result displays that
+  warning. Mode/operator claims are intentionally omitted because the dated rows do not supply
+  reliable per-service values.
 - Place suggestions support loading, empty, and retryable error states. Typing clears any previous
   selection; users must select a suggestion to confirm a place. Choosing the same origin and
-  destination displays a warning. The homepage explicitly says journey search is not available yet.
+  destination displays a warning.
 
 ---
 
@@ -159,7 +164,7 @@ Status: Implemented
 
 ## Responsive/accessibility
 
-Status: Implemented for place selection; broader journey flow planned
+Status: Implemented for place selection and initial journey search
 
 - [x] Mobile-first responsive layout.
 - [x] Keyboard-usable place selection (arrow keys, Enter, Escape, and Tab).
@@ -210,15 +215,15 @@ Status: Out of MVP
 
 Status: Liveness and place search implemented; other transport resources planned
 
-The versioned API exposes application liveness, population-centre search, and generated
-documentation. Liveness does not imply PostgreSQL or provider availability. See `docs/development.md`
-for local URLs. Place search uses the default per-process cache, not persistent storage; cold or
-expired-cache requests return a stable unavailability response if the place provider cannot supply usable data.
+The versioned API exposes application liveness, population-centre search, direct journey search,
+and generated documentation. Liveness does not imply PostgreSQL or provider availability. See
+`docs/development.md` for local URLs. Place search and direct journey search use separate default
+per-process caches, not persistent storage; cold or expired-cache requests return a stable
+unavailability response if the relevant provider cannot supply usable data.
 
 Remaining potential resources:
 
 ```text
-GET /api/v1/journeys/direct
 GET /api/v1/lines
 GET /api/v1/lines/{id}
 GET /api/v1/lines/{id}/schedule

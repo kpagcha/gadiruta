@@ -197,7 +197,11 @@ text separate from a confirmed public place identity. TanStack Query shares sugg
 between fields, debounces requests by 250 ms, and cancels obsolete requests. Suggestions have a
 five-minute freshness window and a ten-minute inactive lifetime; failed requests are not automatically
 retried, and the error state offers a retry control.
-The API client validates response shape and imposes a 25-second request timeout.
+The homepage adds native date/time controls after both places and writes `origin`, `destination`,
+`date`, and optional `depart_after` to the URL only on a valid submit. A reload of that URL queries
+direct services and derives the selected labels from the normalized response. Its result card
+handles loading, retryable error, cautious empty, calendar-warning, and service-list states. The
+API clients validate response shape and impose a 25-second request timeout.
 
 Browser requests use relative `/api/v1/` URLs. Vite proxies `/api/` to Django on port 8000 during
 development and local build preview, so no cross-origin API configuration is needed. Production

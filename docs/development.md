@@ -255,15 +255,21 @@ font weights. Its OFL license is included in `frontend/public/fonts/Manrope-OFL.
 Build output goes to ignored `frontend/dist/`. Preview serves it at http://127.0.0.1:4173 and uses
 the same local Django proxy; it is not a production deployment server.
 
-### Manual place-selection check
+### Manual direct-journey check
 
 1. Type `cadiz` into the starting-point field; select Cádiz using Down then Enter.
 2. Type `puerto` into the destination field and choose a suggestion with the pointer.
-3. Swap the places, edit a selected label, and clear a field. Editing must remove its confirmed identity.
-4. Search for an unmatched name and check the empty state; an unavailable backend should show a retry.
-5. Switch EN/ES, reload to check the saved preference, and try a narrow mobile viewport.
+3. Keep today's date or choose a later date in the current year, optionally set a departure time, then
+   select **Find transport**. Confirm that the URL receives the two place IDs, `date`, and optional
+   `depart_after`.
+4. Reload or open the resulting URL in a new tab. The selected place labels and result state must be restored.
+5. Swap the places, edit a selected label, and clear a field. Editing must remove its confirmed identity.
+6. Search for an unmatched name and check the autocomplete empty state; an unavailable API should show a retry.
+7. Switch EN/ES, reload to check the saved preference, and try a narrow mobile viewport.
 
-Only place selection is available: there is no timetable request, date/time control, or journey result yet.
+Direct results are CTAN timetable rows, not a transfer planner. Dates outside the current local
+year are deliberately unavailable, public-holiday timing may be inaccurate, and the empty state
+must never imply that public transport is impossible.
 
 ---
 
