@@ -131,7 +131,8 @@ The HTTP client validates provider records with Pydantic. CTAN identifiers, rela
 fields remain in integration records. The adapter produces immutable provider records containing an
 external ID, name, and optional municipality label. `CTANPlaceProvider` fetches and joins the
 required resources, skipping municipality retrieval when there are no centres. `CTANDirectJourneyProvider`
-first discovers candidate lines, then fetches each dated line timetable with bounded concurrency.
+first discovers candidate lines, maps their CTAN IDs to normalized transport modes through the line catalogue,
+then fetches each dated line timetable with bounded concurrency.
 It fails the complete lookup if any candidate timetable is unavailable, rather than returning a
 silently partial result. Its adapter matches origin/destination population-centre groups safely,
 extracts only usable rows, and normalizes line code, times, duration, and source note.
@@ -286,6 +287,11 @@ provider-scoped origin/destination IDs, and selected date. The cached value is t
 provider result; time filtering happens per request and does not multiply upstream calls. Empty
 candidate discovery is a successful cached result. Provider failures are never cached and no
 partial candidate-line response is exposed.
+
+CTAN line metadata has its own one-hour process-local cache keyed to the current integration format.
+It maps provider line IDs to transport modes, avoiding a full line-catalogue request for every uncached
+journey search. This metadata improves presentation only: an unavailable or unrecognized mode becomes
+the normalized `unknown` value without discarding a usable timetable.
 
 The versioned cache key identifies Gadiruta's public catalogue rather than an upstream endpoint.
 `CanonicalPlace` holds immutable public UUIDs, current labels, and a stable human-readable URL

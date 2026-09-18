@@ -10,6 +10,7 @@ from pydantic import ValidationError
 from transport.integrations.ctan.schemas import (
     CandidateLine,
     CTANRecord,
+    LineMetadata,
     Municipality,
     PopulationCentre,
     TimetablePlanner,
@@ -83,6 +84,10 @@ class CTANClient:
             return []
         return self._parse_records(payload, "horario", CandidateLine)
 
+    def list_line_metadata(self) -> list[LineMetadata]:
+        """Fetch the CTAN line catalogue used to associate candidate IDs with transport modes."""
+        return self._get_records("lineas", "lineas", LineMetadata, params={"lang": "ES"})
+
     def get_line_timetable(self, line_id: str, day: int, month: int) -> list[TimetablePlanner]:
         """Fetch dated line planners whose CTAN date has no reliable explicit year parameter."""
         payload = self._get_json(
@@ -98,13 +103,15 @@ class CTANClient:
         assert payload is not None
         return self._parse_records(payload, "planificadores", TimetablePlanner)
 
-    def _get_records[T: CTANRecord](self, path: str, key: str, schema: type[T]) -> list[T]:
+    def _get_records[T: CTANRecord](
+        self, path: str, key: str, schema: type[T], *, params: dict[str, str] | None = None
+    ) -> list[T]:
         """Fetch and validate a named record list, retaining the first valid record per ID.
 
         Raise CTANUnavailable for HTTP or transport failures and CTANInvalidResponse for
         unusable JSON, envelopes, or nonempty lists with no valid records. Empty lists are valid.
         """
-        payload = self._get_json(path)
+        payload = self._get_json(path, params=params)
         assert payload is not None
         return self._parse_records(payload, key, schema)
 

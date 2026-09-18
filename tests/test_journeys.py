@@ -138,6 +138,7 @@ def test_api_returns_normalized_services_and_the_calendar_warning(
         "items": [
             {
                 "line_code": "M-2",
+                "transport_mode": "unknown",
                 "departure_time": "10:00:00",
                 "arrival_time": "10:20:00",
                 "duration_minutes": 20,

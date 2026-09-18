@@ -1,8 +1,8 @@
 /** Render one normalized direct service as a self-contained timetable entry. */
 
 import { useTranslation } from 'react-i18next';
-import type { DirectJourney } from '../../api/journeys';
-import { Icon } from '../../components/Icon';
+import type { DirectJourney, TransportMode } from '../../api/journeys';
+import { Icon, type IconName } from '../../components/Icon';
 
 /** Render a compact API clock value without applying browser timezone conversion. */
 function displayTime(value: string): string {
@@ -18,6 +18,15 @@ function durationText(minutes: number, t: ReturnType<typeof useTranslation>['t']
   return t('journey.durationHoursMinutes', { hours, minutes: remainingMinutes });
 }
 
+/** Select an informative shared icon while keeping unclassified provider values neutral. */
+function transportModeIcon(mode: TransportMode): IconName {
+  if (mode === 'bus') return 'bus';
+  if (mode === 'boat') return 'boat';
+  if (mode === 'tram') return 'tram';
+  if (mode === 'train' || mode === 'metro') return 'train';
+  return 'route';
+}
+
 /** Render the line, timing, duration, and provider note for one direct service. */
 export function JourneyServiceCard({ journey }: { journey: DirectJourney }) {
   const { t } = useTranslation();
@@ -25,7 +34,8 @@ export function JourneyServiceCard({ journey }: { journey: DirectJourney }) {
   return (
     <article className="rounded-xl border border-line-subtle bg-surface-input px-4 py-4">
       <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
-        <span className="rounded-md bg-surface-active px-2 py-1 text-xs font-[700] text-accent">
+        <span className="inline-flex items-center gap-1.5 rounded-md bg-surface-active px-2 py-1 text-xs font-[700] text-accent">
+          <Icon name={transportModeIcon(journey.transport_mode)} size={15} strokeWidth={1.8} />
           {t('journey.line', { line: journey.line_code })}
         </span>
         <span className="text-xs text-muted">{durationText(journey.duration_minutes, t)}</span>

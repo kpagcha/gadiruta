@@ -2,6 +2,7 @@
 import {
   ArrowDownUp,
   ArrowRight,
+  BusFront,
   CalendarDays,
   ChevronLeft,
   ChevronRight,
@@ -11,7 +12,10 @@ import {
   MapPin,
   Moon,
   Route,
+  Ship,
   Sun,
+  TrainFront,
+  TramFront,
   X,
   type LucideIcon,
 } from 'lucide-react';
@@ -31,7 +35,11 @@ export type IconName =
   | 'clock'
   | 'calendar'
   | 'chevronLeft'
-  | 'chevronRight';
+  | 'chevronRight'
+  | 'bus'
+  | 'train'
+  | 'tram'
+  | 'boat';
 
 const iconComponents: Record<Exclude<IconName, 'gadiruta'>, LucideIcon> = {
   route: Route,
@@ -47,6 +55,10 @@ const iconComponents: Record<Exclude<IconName, 'gadiruta'>, LucideIcon> = {
   calendar: CalendarDays,
   chevronLeft: ChevronLeft,
   chevronRight: ChevronRight,
+  bus: BusFront,
+  train: TrainFront,
+  tram: TramFront,
+  boat: Ship,
 };
 
 interface IconProps {

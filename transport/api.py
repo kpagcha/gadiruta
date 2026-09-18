@@ -142,6 +142,7 @@ def direct_journeys(
         items=[
             DirectJourneyResponse(
                 line_code=journey.line_code,
+                transport_mode=journey.transport_mode,
                 departure_time=journey.departure_time,
                 arrival_time=journey.arrival_time,
                 duration_minutes=journey.duration_minutes,

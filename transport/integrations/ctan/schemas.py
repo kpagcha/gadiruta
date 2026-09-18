@@ -81,6 +81,13 @@ class CandidateLine(CTANRecord):
     code: Label = Field(alias="codigo")
 
 
+class LineMetadata(CTANRecord):
+    """Map a CTAN line identifier to its provider-owned transport-mode label."""
+
+    upstream_id: Identifier = Field(alias="idLinea")
+    mode: Label = Field(alias="modo")
+
+
 class TimetablePlaceGroup(BaseModel):
     """Describe one contiguous population-centre column group in a line timetable direction."""
 

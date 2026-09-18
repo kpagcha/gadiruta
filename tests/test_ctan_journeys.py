@@ -5,8 +5,8 @@ from pathlib import Path
 
 import httpx
 
-from transport.domain import ProviderPlace
-from transport.integrations.ctan.adapters import to_direct_journeys
+from transport.domain import ProviderPlace, TransportMode
+from transport.integrations.ctan.adapters import normalize_transport_mode, to_direct_journeys
 from transport.integrations.ctan.client import CTANClient
 from transport.integrations.ctan.schemas import CandidateLine, TimetablePlanner
 
@@ -53,6 +53,28 @@ def test_ctan_no_data_response_is_a_valid_empty_candidate_list(ctan_fixture_dir:
         )
     ) as client:
         assert client.list_direct_candidate_lines("23", "49") == []
+
+
+def test_line_metadata_uses_the_verified_catalogue_request(ctan_fixture_dir: Path) -> None:
+    """Fetch CTAN's line-ID-to-mode catalogue with an explicit Spanish language parameter."""
+    requests: list[httpx.Request] = []
+
+    def respond(request: httpx.Request) -> httpx.Response:
+        """Record the line catalogue request and return a representative saved response."""
+        requests.append(request)
+        return httpx.Response(200, content=(ctan_fixture_dir / "line_modes.json").read_bytes())
+
+    with CTANClient(transport=httpx.MockTransport(respond)) as client:
+        metadata = client.list_line_metadata()
+
+    assert [(line.upstream_id, line.mode) for line in metadata] == [
+        ("15", "BARCO"),
+        ("158", "CERCANÍAS"),
+        ("214", "MEDIA DISTANCIA"),
+        ("16", "AUTOBUS"),
+    ]
+    assert requests[0].url.path.endswith("/lineas")
+    assert dict(requests[0].url.params) == {"lang": "ES"}
 
 
 def test_line_timetable_uses_only_ctans_day_and_month_parameters(
@@ -103,6 +125,7 @@ def test_timetable_extraction_uses_safe_group_matches_and_handles_midnight() -> 
         ProviderPlace(external_id="23", name="Jerez", municipality=None),
         [candidate],
         {"9": [planner]},
+        {"9": "BARCO"},
     )
 
     assert len(journeys) == 1
@@ -111,3 +134,11 @@ def test_timetable_extraction_uses_safe_group_matches_and_handles_midnight() -> 
     assert journeys[0].arrival_time == time(0, 15)
     assert journeys[0].duration_minutes == 25
     assert journeys[0].note == "Night service"
+    assert journeys[0].transport_mode is TransportMode.BOAT
+
+
+def test_transport_mode_normalization_has_a_safe_unknown_value() -> None:
+    """Classify documented CTAN labels while keeping unforeseen labels safe for display."""
+    assert normalize_transport_mode("CERCANÍAS") is TransportMode.TRAIN
+    assert normalize_transport_mode("Trambahía") is TransportMode.TRAM
+    assert normalize_transport_mode("unverified future mode") is TransportMode.UNKNOWN

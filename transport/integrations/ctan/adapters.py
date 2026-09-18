@@ -4,7 +4,7 @@ import re
 import unicodedata
 from datetime import time
 
-from transport.domain import DirectJourney, ProviderPlace
+from transport.domain import DirectJourney, ProviderPlace, TransportMode
 from transport.integrations.ctan.schemas import (
     CandidateLine,
     Municipality,
@@ -39,6 +39,7 @@ def to_direct_journeys(
     destination: ProviderPlace,
     candidates: list[CandidateLine],
     planners_by_line: dict[str, list[TimetablePlanner]],
+    line_modes_by_id: dict[str, str],
 ) -> tuple[DirectJourney, ...]:
     """Extract usable direct services from dated CTAN line tables in deterministic order.
 
@@ -48,12 +49,14 @@ def to_direct_journeys(
     """
     journeys: list[DirectJourney] = []
     for candidate in candidates:
+        transport_mode = normalize_transport_mode(line_modes_by_id.get(candidate.upstream_id))
         for planner in planners_by_line[candidate.upstream_id]:
             journeys.extend(
                 _extract_direction(
                     origin.name,
                     destination.name,
                     candidate.code,
+                    transport_mode,
                     planner.outbound_groups,
                     planner.outbound_rows,
                 )
@@ -63,6 +66,7 @@ def to_direct_journeys(
                     origin.name,
                     destination.name,
                     candidate.code,
+                    transport_mode,
                     planner.inbound_groups,
                     planner.inbound_rows,
                 )
@@ -84,6 +88,7 @@ def _extract_direction(
     origin_name: str,
     destination_name: str,
     line_code: str,
+    transport_mode: TransportMode,
     groups: list[TimetablePlaceGroup],
     rows: list[TimetableRow],
 ) -> list[DirectJourney]:
@@ -119,9 +124,26 @@ def _extract_direction(
                 arrival_time=arrival,
                 duration_minutes=duration_minutes,
                 note=_clean_note(row.note),
+                transport_mode=transport_mode,
             )
         )
     return journeys
+
+
+def normalize_transport_mode(value: str | None) -> TransportMode:
+    """Translate known CTAN labels to stable public categories, preserving an unknown fallback."""
+    normalized = _fold_text(value) if value else ""
+    if normalized in {"autobus", "bus"}:
+        return TransportMode.BUS
+    if normalized in {"cercanias", "media distancia", "tren"}:
+        return TransportMode.TRAIN
+    if normalized in {"trambahia", "tranvia"}:
+        return TransportMode.TRAM
+    if normalized in {"barco", "ferry"}:
+        return TransportMode.BOAT
+    if normalized == "metro":
+        return TransportMode.METRO
+    return TransportMode.UNKNOWN
 
 
 def _unique_group_index(groups: list[TimetablePlaceGroup], name: str) -> int | None:

@@ -144,6 +144,20 @@ Notes include literal NUL characters after JSON decoding, truncated text and emb
 Keep the original fixture values; a future adapter must clean display text. Treat `demandahoras`
 as opaque: its apparent line/service/frequency encoding is undocumented and not a stable contract.
 
+### Line transport modes (2026-09-18)
+
+The documented `lineas?lang=ES` endpoint works for consortium `2` and returns a catalogue of
+`idLinea` records with `codigo`, `modo`, `idModo`, and operator text. Representative live records
+include B-042 (`BARCO`), C-1 (`CERCANÍAS`), MD (`MEDIA DISTANCIA`), and M-050 (`AUTOBUS`). The
+smaller `lineas/{idLinea}?lang=ES` detail endpoint also works: line `16` returns `M-050` with
+`modo="AUTOBUS"`, but includes extensive geometry that direct search does not need.
+
+Use the line catalogue as an ID-to-mode map after origin/destination candidate discovery. It safely
+associates each candidate line with a mode, unlike `observacionesModoTransporte`, whose modes are
+only listed at the aggregate origin/destination response level. The mode list is presentation
+metadata, not timetable data: cache it separately for one hour and treat an unavailable, absent, or
+unrecognized value as `unknown` without failing a usable direct-journey response.
+
 ### Implemented composition
 
 Use `horarios_origen_destino` to discover distinct candidate line IDs, then request

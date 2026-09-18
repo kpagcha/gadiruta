@@ -37,6 +37,7 @@ Status: Initial direct journey search implemented
 - [x] Calendar date selection, from today through the current local calendar year, with an optional
   “depart at or after” time filter, explicit confirmation, and a resettable “Now” default.
 - [x] Direct service lookup through the active direct-journey provider.
+- [x] Transport-mode icons in direct-service cards, with a neutral fallback for missing provider data.
 - [x] Journey result cards with line code, departure, arrival, duration, and source note when present;
   initially show four services and reveal the next four with each “Show more” action.
 - [x] Loading state with a direct-service skeleton card and submit-button spinner.
@@ -57,8 +58,8 @@ Notes:
   no public-transport trip exists. The UI explicitly says transfers are unsupported.
 - Searches at least 60 days ahead show a cautious operator-confirmation note. This reflects the
   practical possibility of later timetable changes without presenting CTAN's calendar response as
-  exact. Mode/operator claims are intentionally omitted because dated CTAN rows do not supply
-  reliable per-service values.
+  exact. CTAN line metadata supplies a mode per line, normalized to a small stable category set;
+  unknown metadata uses a neutral icon. Operators are not shown yet.
 - Shared search URLs use readable canonical place slugs (`from=cadiz&to=jerez`), resolving name
   collisions with municipality context and then a stable numeric suffix when necessary.
 - Place suggestions support loading, empty, and retryable error states. Loading stays in the field

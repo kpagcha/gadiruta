@@ -6,11 +6,16 @@ from pathlib import Path
 import httpx
 import pytest
 from django.conf import settings
+from django.core.cache import cache
 from django.core.exceptions import ImproperlyConfigured
 
 from transport.domain import ProviderPlace
 from transport.integrations.ctan.client import CTANError, CTANInvalidResponse, CTANUnavailable
-from transport.integrations.ctan.provider import CTANDirectJourneyProvider, CTANPlaceProvider
+from transport.integrations.ctan.provider import (
+    LINE_MODE_CACHE_KEY,
+    CTANDirectJourneyProvider,
+    CTANPlaceProvider,
+)
 from transport.providers.base import DirectJourneyProvider, PlaceProvider, ProviderError
 from transport.providers.wiring import get_direct_journey_provider, get_place_provider
 
@@ -55,12 +60,17 @@ def test_unsupported_configured_direct_journey_provider_is_rejected(
 
 
 def test_direct_journey_provider_composes_candidate_and_dated_timetable_requests() -> None:
-    """Produce services only after candidate discovery and a dated timetable fetch."""
+    """Produce services with a cached line mode and a dated timetable fetch."""
+    cache.delete(LINE_MODE_CACHE_KEY)
+    requests: list[httpx.Request] = []
 
     def respond(request: httpx.Request) -> httpx.Response:
         """Serve a small CTAN-shaped discovery or line table based on the requested path."""
+        requests.append(request)
         if request.url.path.endswith("horarios_origen_destino"):
             return httpx.Response(200, json={"horario": [{"idlinea": "9", "codigo": "N-9"}]})
+        if request.url.path.endswith("/lineas"):
+            return httpx.Response(200, json={"lineas": [{"idLinea": "9", "modo": "BARCO"}]})
         return httpx.Response(
             200,
             json={
@@ -88,10 +98,19 @@ def test_direct_journey_provider_composes_candidate_and_dated_timetable_requests
     )
 
     assert [(journey.line_code, journey.duration_minutes) for journey in journeys] == [("N-9", 35)]
+    assert journeys[0].transport_mode.value == "boat"
+    provider.get_direct_journeys(
+        origin=ProviderPlace(external_id="1", name="Cádiz", municipality=None),
+        destination=ProviderPlace(external_id="14", name="Jerez", municipality=None),
+        journey_date=date(2026, 9, 15),
+    )
+    assert sum(request.url.path.endswith("/lineas") for request in requests) == 1
+    cache.delete(LINE_MODE_CACHE_KEY)
 
 
 def test_direct_journey_provider_rejects_partial_timetables() -> None:
     """Translate one candidate line failure into a neutral complete-result provider error."""
+    cache.delete(LINE_MODE_CACHE_KEY)
 
     def respond(request: httpx.Request) -> httpx.Response:
         """Return a candidate line then make its dated timetable unavailable."""
@@ -106,6 +125,7 @@ def test_direct_journey_provider_rejects_partial_timetables() -> None:
             destination=ProviderPlace(external_id="14", name="Jerez", municipality=None),
             journey_date=date(2026, 9, 14),
         )
+    cache.delete(LINE_MODE_CACHE_KEY)
 
 
 def test_provider_returns_the_saved_catalogue_and_closes_http(ctan_fixture_dir: Path) -> None:

@@ -6,6 +6,8 @@ from uuid import UUID
 
 from ninja import Field, Schema
 
+from transport.domain import TransportMode
+
 
 class PlaceResponse(Schema):
     """A population centre available for selection, with stable identity and URL slug."""
@@ -37,6 +39,11 @@ class DirectJourneyResponse(Schema):
     """A direct scheduled service with only timetable details verified by its active provider."""
 
     line_code: str
+    transport_mode: TransportMode = Field(
+        description=(
+            "Normalized transport category; unknown means the provider could not classify it."
+        )
+    )
     departure_time: time
     arrival_time: time
     duration_minutes: int = Field(ge=0)

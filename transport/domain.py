@@ -2,7 +2,19 @@
 
 from dataclasses import dataclass
 from datetime import date, datetime, time
+from enum import StrEnum
 from uuid import UUID
+
+
+class TransportMode(StrEnum):
+    """Represent the stable transport categories Gadiruta can present across providers."""
+
+    BUS = "bus"
+    TRAIN = "train"
+    TRAM = "tram"
+    BOAT = "boat"
+    METRO = "metro"
+    UNKNOWN = "unknown"
 
 
 @dataclass(frozen=True)
@@ -49,6 +61,7 @@ class DirectJourney:
     arrival_time: time
     duration_minutes: int
     note: str | None
+    transport_mode: TransportMode = TransportMode.UNKNOWN
 
 
 @dataclass(frozen=True)

@@ -2,9 +2,13 @@
 
 import type { Place } from './places';
 
+/** Enumerate the stable transport categories the journey API can expose. */
+export type TransportMode = 'bus' | 'train' | 'tram' | 'boat' | 'metro' | 'unknown';
+
 /** One normalized scheduled direct service returned by Gadiruta. */
 export interface DirectJourney {
   line_code: string;
+  transport_mode: TransportMode;
   departure_time: string;
   arrival_time: string;
   duration_minutes: number;
@@ -66,12 +70,25 @@ function isTime(value: unknown): value is string {
   return typeof value === 'string' && /^(?:[01][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]$/.test(value);
 }
 
+/** Accept only the stable transport categories documented by Gadiruta's journey API. */
+function isTransportMode(value: unknown): value is TransportMode {
+  return (
+    value === 'bus' ||
+    value === 'train' ||
+    value === 'tram' ||
+    value === 'boat' ||
+    value === 'metro' ||
+    value === 'unknown'
+  );
+}
+
 /** Validate one normalized service card and reject incomplete upstream translations. */
 function isDirectJourney(value: unknown): value is DirectJourney {
   return (
     isRecord(value) &&
     typeof value.line_code === 'string' &&
     value.line_code.trim().length > 0 &&
+    isTransportMode(value.transport_mode) &&
     isTime(value.departure_time) &&
     isTime(value.arrival_time) &&
     typeof value.duration_minutes === 'number' &&

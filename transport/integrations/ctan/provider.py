@@ -4,6 +4,7 @@ from concurrent.futures import ThreadPoolExecutor
 from datetime import date
 
 import httpx
+from django.core.cache import cache
 
 from transport.domain import DirectJourney, ProviderPlace
 from transport.integrations.ctan.adapters import to_direct_journeys, to_places
@@ -12,6 +13,8 @@ from transport.integrations.ctan.schemas import TimetablePlanner
 from transport.providers.base import ProviderError
 
 CTAN_PLACE_PROVIDER_KEY = f"ctan:consortium:{CONSORTIUM_ID}:population-centre"
+LINE_MODE_CACHE_KEY = "gadiruta:ctan:line-modes:v1"
+LINE_MODE_CACHE_TTL_SECONDS = 60 * 60
 
 
 class CTANPlaceProvider:
@@ -62,8 +65,9 @@ class CTANDirectJourneyProvider:
                 candidates = client.list_direct_candidate_lines(
                     origin.external_id, destination.external_id
                 )
-            if not candidates:
-                return ()
+                if not candidates:
+                    return ()
+                line_modes_by_id = self._get_line_modes(client)
             with ThreadPoolExecutor(max_workers=min(4, len(candidates))) as executor:
                 futures = {
                     candidate.upstream_id: executor.submit(
@@ -75,7 +79,9 @@ class CTANDirectJourneyProvider:
                     candidate.upstream_id: futures[candidate.upstream_id].result()
                     for candidate in candidates
                 }
-            return to_direct_journeys(origin, destination, candidates, planners_by_line)
+            return to_direct_journeys(
+                origin, destination, candidates, planners_by_line, line_modes_by_id
+            )
         except CTANError as error:
             raise ProviderError(
                 "The direct journey provider could not supply a complete timetable."
@@ -85,3 +91,21 @@ class CTANDirectJourneyProvider:
         """Fetch one candidate line in an isolated client suitable for bounded parallel work."""
         with CTANClient(transport=self._transport) as client:
             return client.get_line_timetable(line_id, journey_date.day, journey_date.month)
+
+    def _get_line_modes(self, client: CTANClient) -> dict[str, str]:
+        """Return a cached CTAN line-ID mode map, treating optional metadata failures as unknown."""
+        cached = cache.get(LINE_MODE_CACHE_KEY)
+        if isinstance(cached, dict):
+            cached_modes = {
+                line_id: mode
+                for line_id, mode in cached.items()
+                if isinstance(line_id, str) and isinstance(mode, str)
+            }
+            if len(cached_modes) == len(cached):
+                return cached_modes
+        try:
+            modes = {line.upstream_id: line.mode for line in client.list_line_metadata()}
+        except CTANError:
+            return {}
+        cache.set(LINE_MODE_CACHE_KEY, modes, timeout=LINE_MODE_CACHE_TTL_SECONDS)
+        return modes

@@ -145,5 +145,12 @@
     "content_type": "application/json",
     "status": 400,
     "retrieved_at": "2026-09-14T15:23:33.658Z"
+  },
+  {
+    "file": "line_modes.json",
+    "url": "https://api.ctan.es/v1/Consorcios/2/lineas?lang=ES",
+    "content_type": "application/json",
+    "status": 200,
+    "retrieved_at": "2026-09-18T20:16:19.7273142Z"
   }
 ]
