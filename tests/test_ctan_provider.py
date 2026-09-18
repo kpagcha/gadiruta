@@ -1,5 +1,6 @@
-"""Verify CTAN's place capability translates retrieval failures and releases HTTP resources."""
+"""Verify CTAN capabilities translate retrieval failures and release HTTP resources."""
 
+from datetime import date
 from pathlib import Path
 
 import httpx
@@ -7,10 +8,11 @@ import pytest
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
 
+from transport.domain import ProviderPlace
 from transport.integrations.ctan.client import CTANError, CTANInvalidResponse, CTANUnavailable
-from transport.integrations.ctan.provider import CTANPlaceProvider
-from transport.providers.base import PlaceProvider, ProviderError
-from transport.providers.wiring import get_place_provider
+from transport.integrations.ctan.provider import CTANDirectJourneyProvider, CTANPlaceProvider
+from transport.providers.base import DirectJourneyProvider, PlaceProvider, ProviderError
+from transport.providers.wiring import get_direct_journey_provider, get_place_provider
 
 
 class TrackedTransport(httpx.MockTransport):
@@ -29,6 +31,11 @@ def test_default_place_provider_is_ctan() -> None:
     assert isinstance(get_place_provider(), CTANPlaceProvider)
 
 
+def test_default_direct_journey_provider_is_ctan() -> None:
+    """Keep CTAN selected behind the separate direct-journey capability boundary."""
+    assert isinstance(get_direct_journey_provider(), CTANDirectJourneyProvider)
+
+
 def test_unsupported_configured_place_provider_is_rejected(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -36,6 +43,69 @@ def test_unsupported_configured_place_provider_is_rejected(
     monkeypatch.setattr(settings, "GADIRUTA_PLACE_PROVIDER", "unsupported")
     with pytest.raises(ImproperlyConfigured, match="GADIRUTA_PLACE_PROVIDER"):
         get_place_provider()
+
+
+def test_unsupported_configured_direct_journey_provider_is_rejected(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Reject a direct-search implementation before an unsupported provider can serve results."""
+    monkeypatch.setattr(settings, "GADIRUTA_DIRECT_JOURNEY_PROVIDER", "unsupported")
+    with pytest.raises(ImproperlyConfigured, match="GADIRUTA_DIRECT_JOURNEY_PROVIDER"):
+        get_direct_journey_provider()
+
+
+def test_direct_journey_provider_composes_candidate_and_dated_timetable_requests() -> None:
+    """Produce services only after candidate discovery and a dated timetable fetch."""
+
+    def respond(request: httpx.Request) -> httpx.Response:
+        """Serve a small CTAN-shaped discovery or line table based on the requested path."""
+        if request.url.path.endswith("horarios_origen_destino"):
+            return httpx.Response(200, json={"horario": [{"idlinea": "9", "codigo": "N-9"}]})
+        return httpx.Response(
+            200,
+            json={
+                "planificadores": [
+                    {
+                        "nucleosIda": [
+                            {"colspan": 1, "nombre": "C\u00e1diz"},
+                            {"colspan": 1, "nombre": "Jerez"},
+                        ],
+                        "nucleosVuelta": [],
+                        "horarioIda": [{"horas": ["09:00", "09:35"]}],
+                        "horarioVuelta": [],
+                    }
+                ]
+            },
+        )
+
+    provider: DirectJourneyProvider = CTANDirectJourneyProvider(
+        transport=httpx.MockTransport(respond)
+    )
+    journeys = provider.get_direct_journeys(
+        origin=ProviderPlace(external_id="1", name="C\u00e1diz", municipality=None),
+        destination=ProviderPlace(external_id="14", name="Jerez", municipality=None),
+        journey_date=date(2026, 9, 14),
+    )
+
+    assert [(journey.line_code, journey.duration_minutes) for journey in journeys] == [("N-9", 35)]
+
+
+def test_direct_journey_provider_rejects_partial_timetables() -> None:
+    """Translate one candidate line failure into a neutral complete-result provider error."""
+
+    def respond(request: httpx.Request) -> httpx.Response:
+        """Return a candidate line then make its dated timetable unavailable."""
+        if request.url.path.endswith("horarios_origen_destino"):
+            return httpx.Response(200, json={"horario": [{"idlinea": "9", "codigo": "N-9"}]})
+        return httpx.Response(503)
+
+    provider = CTANDirectJourneyProvider(transport=httpx.MockTransport(respond))
+    with pytest.raises(ProviderError, match="complete timetable"):
+        provider.get_direct_journeys(
+            origin=ProviderPlace(external_id="1", name="C\u00e1diz", municipality=None),
+            destination=ProviderPlace(external_id="14", name="Jerez", municipality=None),
+            journey_date=date(2026, 9, 14),
+        )
 
 
 def test_provider_returns_the_saved_catalogue_and_closes_http(ctan_fixture_dir: Path) -> None:

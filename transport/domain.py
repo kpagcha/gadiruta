@@ -1,7 +1,7 @@
 """Provider-independent transport values used by application services."""
 
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import date, datetime, time
 from uuid import UUID
 
 
@@ -37,3 +37,33 @@ class PlaceSearchResult:
 
     places: tuple[Place, ...]
     fetched_at: datetime | None
+
+
+@dataclass(frozen=True)
+class DirectJourney:
+    """One provider-normalized direct scheduled service between two selected places."""
+
+    line_code: str
+    departure_time: time
+    arrival_time: time
+    duration_minutes: int
+    note: str | None
+
+
+@dataclass(frozen=True)
+class DirectJourneyCatalog:
+    """A complete provider result for one direction and date before optional time filtering."""
+
+    journeys: tuple[DirectJourney, ...]
+    fetched_at: datetime
+
+
+@dataclass(frozen=True)
+class DirectJourneySearchResult:
+    """A public-place journey search result with its selected date and optional time filter."""
+
+    origin: Place
+    destination: Place
+    date: date
+    depart_after: time | None
+    catalog: DirectJourneyCatalog

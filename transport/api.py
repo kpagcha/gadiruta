@@ -1,12 +1,29 @@
-"""Public place search routes."""
+"""Public place search and direct journey routes."""
 
 import logging
+from datetime import date, time
+from uuid import UUID
 
 from django.http import HttpRequest
 from ninja import Query, Router, Status
 
 from transport.providers.base import ProviderError
-from transport.schemas import PlaceResponse, PlacesResponse, PlacesUnavailableResponse
+from transport.schemas import (
+    DirectJourneyResponse,
+    DirectJourneysResponse,
+    JourneyInvalidResponse,
+    JourneyPlaceNotFoundResponse,
+    JourneysUnavailableResponse,
+    PlaceResponse,
+    PlacesResponse,
+    PlacesUnavailableResponse,
+)
+from transport.services.journeys import (
+    JourneyDateUnavailableError,
+    JourneyPlaceNotFoundError,
+    JourneyPlaceUnsupportedError,
+    search_direct_journeys,
+)
 from transport.services.places import search_places
 
 router = Router(tags=["Places"])
@@ -39,4 +56,90 @@ def places(
             for place in result.places
         ],
         fetched_at=result.fetched_at,
+    )
+
+
+@router.get(
+    "/journeys/direct",
+    response={
+        200: DirectJourneysResponse,
+        404: JourneyPlaceNotFoundResponse,
+        422: JourneyInvalidResponse,
+        503: JourneysUnavailableResponse,
+    },
+    tags=["Journeys"],
+)
+def direct_journeys(
+    request: HttpRequest,
+    origin: UUID,
+    destination: UUID,
+    journey_date: date = Query(alias="date"),  # noqa: B008
+    depart_after: time | None = Query(None),  # noqa: B008
+) -> (
+    DirectJourneysResponse
+    | Status[JourneyPlaceNotFoundResponse]
+    | Status[JourneyInvalidResponse]
+    | Status[JourneysUnavailableResponse]
+):
+    """Find scheduled direct services for two selected population centres on one supported date.
+
+    Gadiruta does not calculate transfers. CTAN has no reliable year parameter and has returned
+    working-day schedules for observed holidays, so dates are limited to the current local year
+    and every response warns that calendar accuracy is not guaranteed.
+    """
+    try:
+        result = search_direct_journeys(origin, destination, journey_date, depart_after)
+    except ValueError:
+        return Status(
+            422,
+            JourneyInvalidResponse(
+                code="same_place", message="Origin and destination must be different places."
+            ),
+        )
+    except JourneyDateUnavailableError:
+        return Status(
+            422,
+            JourneyInvalidResponse(
+                code="journey_date_unavailable",
+                message="Direct journey dates must be today through the end of the current year.",
+            ),
+        )
+    except JourneyPlaceNotFoundError:
+        return Status(404, JourneyPlaceNotFoundResponse())
+    except JourneyPlaceUnsupportedError:
+        return Status(
+            422,
+            JourneyInvalidResponse(
+                code="journey_place_unsupported",
+                message="One or both selected places are unavailable for direct journey search.",
+            ),
+        )
+    except ProviderError:
+        logger.warning("The direct journey provider could not supply a complete timetable.")
+        return Status(503, JourneysUnavailableResponse())
+    return DirectJourneysResponse(
+        origin=PlaceResponse(
+            id=result.origin.id,
+            name=result.origin.name,
+            municipality=result.origin.municipality,
+        ),
+        destination=PlaceResponse(
+            id=result.destination.id,
+            name=result.destination.name,
+            municipality=result.destination.municipality,
+        ),
+        date=result.date,
+        depart_after=result.depart_after,
+        fetched_at=result.catalog.fetched_at,
+        warnings=["calendar_accuracy_not_guaranteed"],
+        items=[
+            DirectJourneyResponse(
+                line_code=journey.line_code,
+                departure_time=journey.departure_time,
+                arrival_time=journey.arrival_time,
+                duration_minutes=journey.duration_minutes,
+                note=journey.note,
+            )
+            for journey in result.catalog.journeys
+        ],
     )

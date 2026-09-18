@@ -58,3 +58,49 @@ class Municipality(CTANRecord):
 
     upstream_id: Identifier = Field(alias="idMunicipio")
     name: Label = Field(alias="datos")
+
+
+def normalize_passage_time(value: object) -> str:
+    """Accept CTAN's missing marker or a strict 24-hour timetable time."""
+    if not isinstance(value, str):
+        raise ValueError("Expected a timetable time.")
+    text = value.strip()
+    if text == "--" or re.fullmatch(r"(?:[01][0-9]|2[0-3]):[0-5][0-9]", text):
+        return text
+    raise ValueError("Expected a timetable time.")
+
+
+PassageTime = Annotated[str, BeforeValidator(normalize_passage_time)]
+PositiveInteger = Annotated[int, Field(gt=0)]
+
+
+class CandidateLine(CTANRecord):
+    """Identify one CTAN line discovered from an origin-to-destination timetable table."""
+
+    upstream_id: Identifier = Field(alias="idlinea")
+    code: Label = Field(alias="codigo")
+
+
+class TimetablePlaceGroup(BaseModel):
+    """Describe one contiguous population-centre column group in a line timetable direction."""
+
+    colspan: PositiveInteger
+    name: Label = Field(alias="nombre")
+
+
+class TimetableRow(BaseModel):
+    """Contain one scheduled line service row and its source-provided note."""
+
+    times: list[PassageTime] = Field(alias="horas")
+    note: Annotated[str | None, BeforeValidator(optional_text)] = Field(
+        default=None, alias="observaciones"
+    )
+
+
+class TimetablePlanner(BaseModel):
+    """Contain the paired directions and grouped timetable rows for one CTAN planner."""
+
+    outbound_groups: list[TimetablePlaceGroup] = Field(alias="nucleosIda")
+    inbound_groups: list[TimetablePlaceGroup] = Field(alias="nucleosVuelta")
+    outbound_rows: list[TimetableRow] = Field(alias="horarioIda")
+    inbound_rows: list[TimetableRow] = Field(alias="horarioVuelta")

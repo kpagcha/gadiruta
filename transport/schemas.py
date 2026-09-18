@@ -1,6 +1,6 @@
 """Public transport response schemas, independent of provider payloads."""
 
-from datetime import datetime
+from datetime import date, datetime, time
 from typing import Literal
 from uuid import UUID
 
@@ -30,3 +30,46 @@ class PlacesUnavailableResponse(Schema):
 
     code: Literal["places_unavailable"] = "places_unavailable"
     message: str = "Place search is temporarily unavailable. Please try again later."
+
+
+class DirectJourneyResponse(Schema):
+    """A direct scheduled service with only timetable details verified by its active provider."""
+
+    line_code: str
+    departure_time: time
+    arrival_time: time
+    duration_minutes: int = Field(ge=0)
+    note: str | None
+
+
+class DirectJourneysResponse(Schema):
+    """A selected direct journey search and its provider-normalized scheduled services."""
+
+    origin: PlaceResponse
+    destination: PlaceResponse
+    date: date
+    depart_after: time | None
+    fetched_at: datetime
+    warnings: list[Literal["calendar_accuracy_not_guaranteed"]]
+    items: list[DirectJourneyResponse]
+
+
+class JourneyInvalidResponse(Schema):
+    """Explain why a direct journey request cannot be searched under the public contract."""
+
+    code: Literal["same_place", "journey_date_unavailable", "journey_place_unsupported"]
+    message: str
+
+
+class JourneyPlaceNotFoundResponse(Schema):
+    """Report a canonical place identifier that does not exist in Gadiruta."""
+
+    code: Literal["journey_place_not_found"] = "journey_place_not_found"
+    message: str = "One or both selected places could not be found."
+
+
+class JourneysUnavailableResponse(Schema):
+    """Report a complete direct timetable that the active provider could not supply."""
+
+    code: Literal["journeys_unavailable"] = "journeys_unavailable"
+    message: str = "Direct journeys are temporarily unavailable. Please try again later."

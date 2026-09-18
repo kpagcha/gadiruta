@@ -310,3 +310,39 @@ Consequences:
 - A later GTFS or commercial-provider adapter can add explicit references to existing canonical
   places; unmatched records remain distinct until a deliberate crosswalk is supplied.
 - Full backend tests and pre-push checks require the configured PostgreSQL test database.
+
+---
+
+## 2026-09-18 — Capability-specific CTAN direct journey lookup
+
+Context:
+
+CTAN does not provide a reliable single direct-journey endpoint for a selected date. The
+origin/destination endpoint discovers candidate lines but ignores date-like parameters, while the
+line timetable endpoint accepts only day and month. It has no reliable year parameter and has
+returned working-day tables for observed holidays.
+
+Decision:
+
+Add a separate `DirectJourneyProvider` capability, selected by
+`GADIRUTA_DIRECT_JOURNEY_PROVIDER` and implemented initially by CTAN. Resolve public place UUIDs
+through that capability's provider-reference crosswalks. CTAN discovers candidate lines, fetches
+each dated line timetable with at most four concurrent requests, and extracts only rows whose
+unambiguous population-centre groups are in the requested travel order.
+
+Allow dates from today through the end of the current Europe/Madrid calendar year. Cache a complete
+normalized result for one hour, then apply the optional departure-time filter locally. Treat
+CTAN's exact documented no-data response as a cautious successful empty result. Fail the entire
+lookup on any other candidate or timetable failure rather than presenting a partial timetable.
+
+Consequences:
+
+- The public API exposes provider-neutral line code, departure/arrival times, duration, and an
+  optional cleaned source note; it does not claim CTAN mode or operator data that the timetable
+  rows do not reliably provide.
+- The API warns every result that calendar accuracy is not guaranteed, and it does not imply that
+  transport is impossible when no direct service is returned.
+- A future GTFS, Google Maps, or other provider can implement direct search independently of place
+  search, provided explicit canonical-place crosswalks exist for that provider.
+- Requests are bounded but a cold search can make several CTAN calls. The one-hour cache avoids
+  repeating a complete successful lookup for different departure-time filters.

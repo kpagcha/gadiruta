@@ -279,6 +279,7 @@ Settings read the process environment; `.env` is loaded only when explicitly pas
 | `DJANGO_DEBUG` | `false`; accepts `true` or `false`, ignoring case/outer whitespace. |
 | `DJANGO_ALLOWED_HOSTS` | `localhost,127.0.0.1,[::1]`; comma-separated, blank entries ignored. |
 | `GADIRUTA_PLACE_PROVIDER` | `ctan`; the one active population-centre provider. Other values fail startup until implemented. |
+| `GADIRUTA_DIRECT_JOURNEY_PROVIDER` | `ctan`; the one active direct-journey provider. Other values fail startup until implemented. |
 | `POSTGRES_DB` | `gadiruta` |
 | `POSTGRES_USER` | `gadiruta` |
 | `POSTGRES_PASSWORD` | Empty; set for the configured database role. |
@@ -350,10 +351,11 @@ The fixture README and `metadata.json` record provenance. CTAN tests use `httpx.
 default test fixture rejects live HTTPX transport calls. Cache tests isolate the place-catalogue
 key. Tests that reconcile canonical identities use the configured PostgreSQL test database.
 
-Provider-neutral catalogue/API tests use a structural `PlaceProvider` stub instead of CTAN
-fixtures. Replace the service's provider factory in these tests; do not patch HTTP clients into
-the service layer. Concrete implementation selection belongs in `transport/providers/wiring.py`.
-Keep CTAN parsing and error-translation tests alongside the integration tests.
+Provider-neutral catalogue/API tests use structural `PlaceProvider` or `DirectJourneyProvider`
+stubs instead of CTAN fixtures. Replace the relevant service's provider factory in these tests; do
+not patch HTTP clients into the service layer. Concrete implementation selection belongs in
+`transport/providers/wiring.py`. Keep CTAN parsing and error-translation tests alongside the
+integration tests.
 
 When adding a fixture:
 
@@ -387,9 +389,12 @@ When adding or changing an endpoint:
 - OpenAPI JSON: http://127.0.0.1:8000/api/v1/openapi.json
 - Application liveness: http://127.0.0.1:8000/api/v1/health
 - Place-search example: http://127.0.0.1:8000/api/v1/places?q=cadiz
+- Direct-journey endpoint: http://127.0.0.1:8000/api/v1/journeys/direct
 
-The place-search example contacts live CTAN on a cache miss. Query behavior and response fields
-are documented in OpenAPI. The cache is process-local and resets when that process restarts.
+The place-search example contacts live CTAN on a cache miss. Direct journey lookup requires
+selected Gadiruta place UUIDs, a `date` between today and the current year's end, and an optional
+`depart_after` time. Query behavior and response fields are documented in OpenAPI. Both caches are
+process-local and reset when that process restarts.
 
 The `scalar-ninja` integration serves the reference page at the same URL as before. Its browser
 bundle is pinned to a versioned jsDelivr URL in `gadiruta/api.py`; the browser needs internet access

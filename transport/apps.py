@@ -10,7 +10,11 @@ class TransportConfig(AppConfig):
     name = "transport"
 
     def ready(self) -> None:
-        """Validate the active place-provider setting after Django settings are available."""
-        from transport.providers.wiring import validate_place_provider
+        """Validate active capability-provider settings after Django settings are available."""
+        from transport.providers.wiring import (
+            validate_direct_journey_provider,
+            validate_place_provider,
+        )
 
         validate_place_provider()
+        validate_direct_journey_provider()

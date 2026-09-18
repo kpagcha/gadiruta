@@ -98,20 +98,23 @@ Responsibilities:
 
 ### Provider capability boundary
 
-`PlaceProvider` in `transport/providers/base.py` defines only the implemented place capability.
-It returns normalized provider-scoped records with external IDs and labels, or raises
-`ProviderError`; the application resolves them to persistent public `Place` values. Implementations
-own retrieval, normalization, external identifiers, and resource cleanup. The application owns
-canonical identity, caching, and search behavior.
+`PlaceProvider` returns normalized provider-scoped population centres with external IDs and labels,
+or raises `ProviderError`; the application resolves them to persistent public `Place` values.
+`DirectJourneyProvider` accepts two such provider-scoped places plus a date and returns normalized
+scheduled services. It deliberately does not expose raw candidate lines, CTAN planner tables, or
+provider errors. Implementations own retrieval, normalization, external identifiers, and resource
+cleanup. The application owns canonical identity, cache policy, optional departure filtering, and
+API behavior.
 
-`transport/providers/wiring.py` is the explicit composition point for one deployment-selected
-provider. `GADIRUTA_PLACE_PROVIDER=ctan` is the only supported value today. Services call this
-factory without importing the concrete integration. API handlers catch `ProviderError` and return
-application-level errors without logging provider or database details.
+`transport/providers/wiring.py` is the explicit composition point for each deployment-selected
+capability. `GADIRUTA_PLACE_PROVIDER=ctan` and `GADIRUTA_DIRECT_JOURNEY_PROVIDER=ctan` are the
+only supported values today. Services call these factories without importing the concrete
+integration. API handlers catch `ProviderError` and return application-level errors without
+logging provider or database details.
 
-Add other capability contracts only when needed; there is no monolithic transport provider,
-automatic fallback, or multi-provider aggregation. Direct-journey work will add its own contract
-when that feature starts.
+There is no monolithic transport provider, automatic fallback, or multi-provider aggregation. A
+future provider can implement one capability without requiring a premature implementation of all
+other transport features.
 
 ### CTAN integration layer
 
@@ -127,9 +130,16 @@ Raw CTAN payloads must not become Gadiruta's public API contract.
 The HTTP client validates provider records with Pydantic. CTAN identifiers, relationships, and zone
 fields remain in integration records. The adapter produces immutable provider records containing an
 external ID, name, and optional municipality label. `CTANPlaceProvider` fetches and joins the
-required resources, skipping municipality retrieval when there are no centres. Place services map
-these records to canonical database identities, cache the public catalogue, and perform local
-accent-insensitive matching and ranking. The API explicitly selects public fields and does not
+required resources, skipping municipality retrieval when there are no centres. `CTANDirectJourneyProvider`
+first discovers candidate lines, then fetches each dated line timetable with bounded concurrency.
+It fails the complete lookup if any candidate timetable is unavailable, rather than returning a
+silently partial result. Its adapter matches origin/destination population-centre groups safely,
+extracts only usable rows, and normalizes line code, times, duration, and source note.
+
+Place services map catalogue records to canonical database identities, cache the public catalogue,
+and perform local accent-insensitive matching and ranking. Direct-journey services reverse the
+active direct provider's canonical crosswalks, cache an unfiltered complete result for an hour, and
+apply any departure-time filter afterward. The API explicitly selects public fields and does not
 interpret provider identity.
 
 ---
@@ -218,8 +228,9 @@ native requirements emerge that the browser/PWA platform cannot satisfy adequate
 ## API boundary
 
 The frontend calls Gadiruta's Django API, mounted at `/api/v1/`. Application liveness deliberately
-does not contact a database or upstream provider. Place search uses the configured place provider on cache
-misses and does not require a database. The remaining resource plans are in `docs/features.md`.
+does not contact a database or upstream provider. Place search and direct journey search resolve
+provider records through PostgreSQL-backed canonical identities on a cache miss. The remaining
+resource plans are in `docs/features.md`.
 
 Django Ninja/OpenAPI is the canonical endpoint-level reference. Source attribution and the
 independence disclaimer appear once in the top-level API description, also displayed by Scalar.
@@ -237,6 +248,12 @@ catalogue is cached. The timestamp reflects the completed fetch, not the upstrea
 time. A valid empty catalogue is cacheable; failures are not. An unexpired catalogue can serve
 requests during provider outages. There is no stale-on-error fallback, background refresh, or
 shared multi-worker cache yet.
+
+Direct journey results use a separate one-hour process-local cache keyed by direct-provider key,
+provider-scoped origin/destination IDs, and selected date. The cached value is the full normalized
+provider result; time filtering happens per request and does not multiply upstream calls. Empty
+candidate discovery is a successful cached result. Provider failures are never cached and no
+partial candidate-line response is exposed.
 
 The versioned cache key identifies Gadiruta's public catalogue rather than an upstream endpoint.
 `CanonicalPlace` holds immutable public UUIDs and current labels. `ProviderPlaceReference` maps a

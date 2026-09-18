@@ -144,7 +144,7 @@ Notes include literal NUL characters after JSON decoding, truncated text and emb
 Keep the original fixture values; a future adapter must clean display text. Treat `demandahoras`
 as opaque: its apparent line/service/frequency encoding is undocumented and not a stable contract.
 
-### Recommendation for the next slice
+### Implemented composition
 
 Use `horarios_origen_destino` to discover distinct candidate line IDs, then request
 `horarios_lineas?linea={id}&frecuencia=&dia={day}&mes={month}&lang=ES` for each. Extract every
@@ -152,10 +152,13 @@ usable service for the requested direction and combine departures across lines; 
 not identify a single line or departure. There is no need to join individual OD and line rows
 by the opaque `demandahoras` field. The dated line table supplies the service rows.
 
-This supersedes the earlier recommendation to require an undated first slice. The composition
-works, but the date policy must address the concrete calendar limitations below before claiming
-arbitrary-date or holiday correctness. Do not silently force every holiday to one frequency ID:
-frequency sets differ between lines. Keep upstream failures distinct from verified empty results.
+Gadiruta implements this composition behind its direct-journey provider capability. It accepts the
+exact `400 {"error": "No se encuentran los datos"}` response as a successful empty result, but
+the UI must phrase that cautiously because the same response also occurs for an unknown destination.
+Any other candidate or dated-timetable failure fails the complete lookup; no partial candidate-line
+list is displayed. Do not silently force every holiday to one frequency ID: frequency sets differ
+between lines. The date policy remains limited to the current calendar year and warns callers that
+calendar accuracy is not guaranteed.
 
 ### Candidate-line follow-up (2026-09-14)
 

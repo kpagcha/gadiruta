@@ -37,6 +37,12 @@ GADIRUTA_PLACE_PROVIDER = os.environ.get("GADIRUTA_PLACE_PROVIDER", "ctan").stri
 if not GADIRUTA_PLACE_PROVIDER:
     raise ImproperlyConfigured("GADIRUTA_PLACE_PROVIDER must not be blank.")
 
+GADIRUTA_DIRECT_JOURNEY_PROVIDER = (
+    os.environ.get("GADIRUTA_DIRECT_JOURNEY_PROVIDER", "ctan").strip().lower()
+)
+if not GADIRUTA_DIRECT_JOURNEY_PROVIDER:
+    raise ImproperlyConfigured("GADIRUTA_DIRECT_JOURNEY_PROVIDER must not be blank.")
+
 ALLOWED_HOSTS = [
     host.strip()
     for host in os.environ.get("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1,[::1]").split(",")

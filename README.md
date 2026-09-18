@@ -41,7 +41,7 @@ Browser / React
        ↓
  Transport domain/services
        ↓
- PlaceProvider capability
+ Capability-specific providers
        ↓
   CTAN integration
        ↓
@@ -49,7 +49,7 @@ Browser / React
 ```
 
 The frontend uses Gadiruta's API, and services consume normalized provider capabilities.
-CTAN is the current place-data implementation, not the application/domain contract.
+CTAN is the current place and direct-journey implementation, not the application/domain contract.
 
 ## Documentation
 
