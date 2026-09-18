@@ -3,16 +3,17 @@
 import httpx
 
 from transport.domain import ProviderPlace
-from transport.identity import CTAN_POPULATION_CENTRE_PROVIDER_KEY
 from transport.integrations.ctan.adapters import to_places
-from transport.integrations.ctan.client import CTANClient, CTANError
+from transport.integrations.ctan.client import CONSORTIUM_ID, CTANClient, CTANError
 from transport.providers.base import ProviderError
+
+CTAN_PLACE_PROVIDER_KEY = f"ctan:consortium:{CONSORTIUM_ID}:population-centre"
 
 
 class CTANPlaceProvider:
     """Join CTAN centres and municipality labels behind the normalized place contract."""
 
-    provider_key = CTAN_POPULATION_CENTRE_PROVIDER_KEY
+    provider_key = CTAN_PLACE_PROVIDER_KEY
 
     def __init__(self, *, transport: httpx.BaseTransport | None = None) -> None:
         """Allow an offline HTTP transport; each catalogue fetch owns and closes its client."""

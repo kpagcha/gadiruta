@@ -16,7 +16,7 @@ Status: Implemented
 - [x] Versioned Django Ninja API with typed application liveness response.
 - [x] Generated OpenAPI schema and interactive Scalar API documentation with global data attribution.
 - [x] Locked dependencies, pytest, Ruff lint/format checks, and mypy type checks.
-- [x] Persistent canonical place IDs and provider-reference crosswalks, preserving existing CTAN UUIDs.
+- [x] Persistent canonical place IDs and provider-reference crosswalks.
 
 The CTAN place-search backend and English/Spanish place-selection homepage are implemented.
 Direct-service lookup is the next functional slice. CTAN discovery has verified the candidate-line

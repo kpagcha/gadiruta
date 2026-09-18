@@ -243,6 +243,9 @@ Consequences:
   caching/synchronization strategy will need review before deployment.
 - The first places resource represents population centres only, not physical stops.
 
+The UUIDv5 derivation was superseded before public release by the canonical-identity decision of
+2026-09-18.
+
 ---
 
 ## 2026-09-06 — Capability-specific provider boundary and global attribution
@@ -284,16 +287,16 @@ Consequences:
 
 Context:
 
-The first place provider derived public UUIDs directly from CTAN population-centre IDs. That kept
-the initial API simple, but a provider replacement would otherwise change public IDs, invalidate
-selected places, and make future saved links or favourites difficult to preserve.
+The first place provider derived public UUIDs directly from CTAN population-centre IDs. The
+application has not been released and no persisted Gadiruta place IDs exist, so there is no public
+identity contract to migrate from that implementation.
 
 Decision:
 
-Persist canonical places and provider-reference crosswalks in PostgreSQL. Keep the existing CTAN
-UUIDv5 values as canonical IDs for every current CTAN population-centre record. The active provider
-refreshes canonical display labels during a successful catalogue cache refresh. New provider records
-without a crosswalk create a fresh UUID4 canonical place; never infer a crosswalk by matching labels.
+Persist canonical places and provider-reference crosswalks in PostgreSQL. The first successful
+catalogue refresh assigns a fresh UUID4 canonical ID to each previously unmapped provider record.
+The active provider refreshes canonical display labels during a successful catalogue cache refresh.
+Never infer a crosswalk by matching labels.
 
 Use one environment-selected place provider per deployment, defaulting to CTAN. Do not add runtime
 fallback, provider merging, or a universal transport-provider interface. Add a direct-journey
@@ -301,7 +304,8 @@ provider contract only when direct journey search is implemented.
 
 Consequences:
 
-- The public places API remains unchanged, including every existing CTAN UUID.
+- A place's public ID remains stable after its provider-reference crosswalk is first created.
+- No compatibility mapping exists for the unreleased CTAN-derived UUIDs.
 - Place search now requires PostgreSQL to resolve provider records into canonical identities.
 - A later GTFS or commercial-provider adapter can add explicit references to existing canonical
   places; unmatched records remain distinct until a deliberate crosswalk is supplied.

@@ -240,10 +240,9 @@ shared multi-worker cache yet.
 
 The versioned cache key identifies Gadiruta's public catalogue rather than an upstream endpoint.
 `CanonicalPlace` holds immutable public UUIDs and current labels. `ProviderPlaceReference` maps a
-provider key plus external ID to that identity. Existing CTAN population-centre records retain the
-UUIDv5 values previously exposed by the API; unmapped records from a future provider receive new
-UUID4 identities. Records are never matched by labels automatically, so deliberate crosswalks can
-be added later without risking false matches.
+provider key plus external ID to that identity. A record without a crosswalk receives a new UUID4
+identity, whether it comes from CTAN or a future provider. Records are never matched by labels
+automatically, so deliberate crosswalks can be added later without risking false matches.
 
 Potential persisted entities include:
 
@@ -304,7 +303,7 @@ title, and fetch timestamps follow the active locale.
 Normal automated tests should not depend on live provider availability.
 
 Service/API boundary tests use a small structural `PlaceProvider` stub with provider-scoped records
-and neutral errors, without CTAN HTTP. PostgreSQL-backed tests cover canonical UUID preservation,
+and neutral errors, without CTAN HTTP. PostgreSQL-backed tests cover canonical UUID assignment,
 reference reuse, label refreshes, and unmapped-provider behavior. They also cover ranking, caching,
 empty results, short queries, and safe error responses independently of the current integration.
 

@@ -5,23 +5,23 @@ from uuid import UUID
 import pytest
 
 from transport.domain import ProviderPlace
-from transport.identity import CTAN_POPULATION_CENTRE_PROVIDER_KEY
 from transport.models import CanonicalPlace, ProviderPlaceReference
 from transport.providers.base import ProviderError
 from transport.services.place_identities import reconcile_provider_places
 
 pytestmark = pytest.mark.django_db
+CTAN_PROVIDER_KEY = "ctan:consortium:2:population-centre"
 
 
-def test_ctan_reference_preserves_the_existing_public_uuid() -> None:
-    """Seed the former CTAN-derived public UUID when its first canonical record is created."""
+def test_first_provider_reference_assigns_a_canonical_uuid() -> None:
+    """Assign a new canonical UUID when a provider record has no existing crosswalk."""
     places = reconcile_provider_places(
-        CTAN_POPULATION_CENTRE_PROVIDER_KEY,
+        CTAN_PROVIDER_KEY,
         (ProviderPlace(external_id="1", name="Cádiz", municipality="Cádiz"),),
     )
-    assert str(places[0].id) == "a222989e-0a14-5920-872e-5ae77baea6b7"
+    assert UUID(str(places[0].id)).version == 4
     reference = ProviderPlaceReference.objects.get(
-        provider_key=CTAN_POPULATION_CENTRE_PROVIDER_KEY,
+        provider_key=CTAN_PROVIDER_KEY,
         external_id="1",
     )
     assert reference.place_id == places[0].id
@@ -30,11 +30,11 @@ def test_ctan_reference_preserves_the_existing_public_uuid() -> None:
 def test_existing_reference_reuses_identity_and_refreshes_labels() -> None:
     """Keep one public UUID while the active provider updates a place's display labels."""
     first = reconcile_provider_places(
-        CTAN_POPULATION_CENTRE_PROVIDER_KEY,
+        CTAN_PROVIDER_KEY,
         (ProviderPlace(external_id="1", name="Cádiz", municipality="Cádiz"),),
     )[0]
     second = reconcile_provider_places(
-        CTAN_POPULATION_CENTRE_PROVIDER_KEY,
+        CTAN_PROVIDER_KEY,
         (ProviderPlace(external_id="1", name="Cádiz centro", municipality=None),),
     )[0]
     assert second.id == first.id

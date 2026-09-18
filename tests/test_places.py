@@ -65,9 +65,9 @@ def test_search_normalizes_accents_case_and_whitespace(
     body = response.json()
     assert len(body["items"]) == 1
     place = body["items"][0]
-    assert UUID(place["id"]).version == 5
+    assert UUID(place["id"]).version == 4
     assert place == {
-        "id": "a222989e-0a14-5920-872e-5ae77baea6b7",
+        "id": place["id"],
         "kind": "population_centre",
         "name": "Cádiz",
         "municipality": "Cádiz",
