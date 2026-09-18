@@ -35,6 +35,7 @@ Backend prerequisites:
 - Git.
 - Python 3.14 (verified with 3.14.0).
 - uv (verified with 0.10.12) for dependencies, the lockfile, and command execution.
+- Docker Desktop with Docker Compose V2 for the default local PostgreSQL and pgAdmin services.
 - PostgreSQL 15 or newer, as required by
   [Django 6.1](https://docs.djangoproject.com/en/6.1/ref/databases/#postgresql-notes).
 
@@ -45,7 +46,7 @@ Frontend prerequisites: Node.js 24 (24.11.1 or newer within that major) and npm 
 ## Quick start
 
 Use these steps for a first-time local setup. Run the commands from the repository root in
-PowerShell. Start Docker Desktop before creating the database container.
+PowerShell. Start Docker Desktop before starting the database services.
 
 1. Install the backend dependencies and create a private environment file:
 
@@ -57,30 +58,47 @@ PowerShell. Start Docker Desktop before creating the database container.
 
    Put the generated value in `.env` as `DJANGO_SECRET_KEY`. Do not commit `.env`.
 
-2. Start a PostgreSQL 16 container. PostgreSQL 15 or newer is supported. Replace
-   `local-dev-password` with a password for this local database:
+2. Set local database and pgAdmin credentials in `.env`. `POSTGRES_PASSWORD` is the password for
+   Gadiruta's PostgreSQL role. `PGADMIN_DEFAULT_EMAIL` and `PGADMIN_DEFAULT_PASSWORD` are a
+   separate pgAdmin sign-in account. Do not reuse a production password.
 
    ```powershell
-   docker run --name gadiruta-postgres `
-     --env POSTGRES_DB=gadiruta `
-     --env POSTGRES_USER=gadiruta `
-     --env POSTGRES_PASSWORD=local-dev-password `
-     --publish 5432:5432 `
-     --volume gadiruta-postgres-data:/var/lib/postgresql/data `
-     --detach postgres:16
+   notepad .env
    ```
 
-   In `.env`, set `POSTGRES_PASSWORD` to the same password. The remaining `POSTGRES_*` values
-   from `.env.example` already match this container.
+3. Start PostgreSQL 16 and pgAdmin with Docker Compose. PostgreSQL 15 or newer is supported.
 
-3. Apply migrations and create an optional administrator account for `/admin/`:
+   If you previously created the standalone `gadiruta-postgres` container from this guide, stop
+   and remove that container first. Its `gadiruta-postgres-data` volume is retained and reused by
+   Compose:
+
+   ```powershell
+   docker stop gadiruta-postgres
+   docker rm gadiruta-postgres
+   ```
+
+   ```powershell
+   docker compose up --detach
+   docker compose ps
+   ```
+
+   Compose creates a private network automatically. The Django process reaches PostgreSQL through
+   `localhost` on the configured `POSTGRES_PORT`; pgAdmin reaches it by the Compose service name.
+
+   Open http://127.0.0.1:5050 and sign in with `PGADMIN_DEFAULT_EMAIL` and
+   `PGADMIN_DEFAULT_PASSWORD` from `.env`. Register a server named `Gadiruta local` with host name
+   `postgres`, port `5432`, maintenance database `gadiruta`, and the `POSTGRES_USER` /
+   `POSTGRES_PASSWORD` values from `.env`. pgAdmin is bound only to the local machine and is a
+   development tool, not deployed application infrastructure.
+
+4. Apply migrations and create an optional administrator account for `/admin/`:
 
    ```powershell
    uv run --locked --env-file .env python manage.py migrate
    uv run --locked --env-file .env python manage.py createsuperuser
    ```
 
-4. Start the API in one terminal:
+5. Start the API in one terminal:
 
    ```powershell
    uv run --locked --env-file .env python manage.py runserver
@@ -89,7 +107,7 @@ PowerShell. Start Docker Desktop before creating the database container.
    The API is available at http://127.0.0.1:8000, and its interactive documentation is at
    http://127.0.0.1:8000/api/v1/docs.
 
-5. Install and start the frontend in a second terminal:
+6. Install and start the frontend in a second terminal:
 
    ```powershell
    npm --prefix frontend ci
@@ -98,9 +116,9 @@ PowerShell. Start Docker Desktop before creating the database container.
 
    Open http://127.0.0.1:5173. Vite forwards `/api/` requests to the API server on port 8000.
 
-On later sessions, start the existing database container with
-`docker start gadiruta-postgres`, then start the API and frontend from steps 4 and 5. PyCharm can
-start the two application processes through the shared configurations described below.
+On later sessions, start the database services with `docker compose up --detach`, then start the
+API and frontend from steps 5 and 6. PyCharm can start the two application processes through the
+shared configurations described below.
 
 ---
 
@@ -266,6 +284,8 @@ Settings read the process environment; `.env` is loaded only when explicitly pas
 | `POSTGRES_PASSWORD` | Empty; set for the configured database role. |
 | `POSTGRES_HOST` | `localhost` |
 | `POSTGRES_PORT` | `5432` |
+| `PGADMIN_DEFAULT_EMAIL` | Required by the local pgAdmin container; its administrator sign-in email. |
+| `PGADMIN_DEFAULT_PASSWORD` | Required by the local pgAdmin container; its administrator sign-in password. |
 
 The example explicitly enables debug mode. It is not production configuration. Set the real
 deployment hosts, secret, and HTTPS settings before deployment. No CORS settings exist yet. CTAN
@@ -275,8 +295,21 @@ requests use the fixed HTTPS API base and consortium `2`; no API key is needed f
 
 ## Database
 
-Use a supported PostgreSQL server and its command-line tools. For a new local development database,
-run these against that server with an administrative role (often `postgres`):
+`compose.yaml` creates the local development database and role from the `POSTGRES_*` values in
+`.env`; it also starts pgAdmin on http://127.0.0.1:5050. Its named volumes retain database and
+pgAdmin state across `docker compose down` and later `docker compose up --detach` commands.
+
+To remove the local containers while retaining their data, run:
+
+```powershell
+docker compose down
+```
+
+Do not run `docker compose down --volumes` unless you intend to permanently delete the local
+database and pgAdmin state.
+
+For a local development database outside Compose, use a supported PostgreSQL server and its
+command-line tools. Run these against that server with an administrative role (often `postgres`):
 
 ```powershell
 createuser -h localhost -p 5432 -U postgres --pwprompt --createdb gadiruta
