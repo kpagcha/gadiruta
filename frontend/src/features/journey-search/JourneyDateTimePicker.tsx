@@ -43,6 +43,9 @@ export function JourneyDateTimePicker({
         previousMonth: t('journey.previousMonth'),
         nextMonth: t('journey.nextMonth'),
         time: t('journey.time'),
+        timeHours: t('journey.timeHours'),
+        timeMinutes: t('journey.timeMinutes'),
+        clearTime: t('journey.clearTime'),
         confirm: t('journey.confirmDateTime'),
       }}
     />

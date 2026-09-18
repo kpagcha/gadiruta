@@ -173,6 +173,7 @@ frontend/
             date-time-picker/
                 calendar.ts
                 DateTimePicker.tsx
+                TimePicker.tsx
             Icon.tsx
             Panel.tsx
             Skeleton.tsx
