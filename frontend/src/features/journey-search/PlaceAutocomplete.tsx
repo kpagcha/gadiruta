@@ -31,7 +31,7 @@ export function PlaceAutocomplete({
   onChange,
   endpoint,
 }: PlaceAutocompleteProps) {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const id = useId();
   const inputRef = useRef<HTMLInputElement>(null);
   const activeRef = useRef<HTMLButtonElement>(null);
@@ -39,8 +39,12 @@ export function PlaceAutocomplete({
   const [isComposing, setIsComposing] = useState(false);
   const [activeId, setActiveId] = useState<string | null>(null);
   const search = usePlaceSearch(value.text, isOpen && !isComposing);
-  const showPopup = isOpen && !isComposing && canSearchPlaces(value.text);
-  const isLoading = search.isDebouncing || search.isFetching || search.isPending;
+  const isLoading =
+    isOpen &&
+    !isComposing &&
+    canSearchPlaces(value.text) &&
+    (search.isDebouncing || search.isFetching || search.isPending);
+  const showPopup = isOpen && !isComposing && canSearchPlaces(value.text) && !isLoading;
   const options = !isLoading && !search.isError ? (search.data?.items ?? []) : [];
   const activeIndex = options.findIndex((place) => place.id === activeId);
   const activeOption = showPopup ? options[activeIndex] : undefined;
@@ -63,7 +67,7 @@ export function PlaceAutocomplete({
     onChange({ text: '', place: null });
     setActiveId(null);
     inputRef.current?.focus();
-    setIsOpen(true);
+    setIsOpen(false);
   }
 
   /** Navigate only suggestions; leave text editing, tab navigation, and IME input to the browser. */
@@ -101,7 +105,6 @@ export function PlaceAutocomplete({
     return t('places.results', { count: options.length });
   }
 
-  const fetchedAt = search.data?.fetched_at;
   const endpointMarkClass =
     endpoint === 'destination'
       ? 'size-2.25 rounded-xs border-2 border-accent bg-accent'
@@ -133,7 +136,7 @@ export function PlaceAutocomplete({
           aria-expanded={showPopup}
           aria-controls={showPopup ? listId : undefined}
           aria-activedescendant={activeOption ? `${id}-${activeOption.id}` : undefined}
-          aria-describedby={`${id}-help ${id}-instructions`}
+          aria-describedby={value.place ? `${id}-instructions` : `${id}-help ${id}-instructions`}
           autoComplete="off"
           autoCorrect="off"
           autoCapitalize="none"
@@ -152,35 +155,31 @@ export function PlaceAutocomplete({
           onKeyDown={handleKeyDown}
           className="w-full min-w-0 flex-1 rounded-xl border-0 bg-transparent px-0 py-4.5 pl-4 text-[17px] outline-none placeholder:text-muted-soft focus-visible:outline-offset-0 max-[380px]:pl-3 max-[380px]:text-base"
         />
-        {value.text && (
+        {isLoading ? (
+          <span className="grid size-12 shrink-0 place-items-center text-accent" aria-hidden="true">
+            <Icon name="loader" className="size-5 animate-spin motion-reduce:animate-none" />
+          </span>
+        ) : value.text ? (
           <button
             type="button"
-            className="m-1 grid size-11 shrink-0 place-items-center rounded-lg border-0 bg-transparent text-muted transition-colors hover:bg-surface-hover hover:text-ink"
+            className="m-1 grid size-11 shrink-0 place-items-center rounded-full border-0 bg-transparent text-muted transition-colors hover:bg-surface-hover hover:text-ink"
             aria-label={clearLabel}
+            onPointerDown={(event) => event.preventDefault()}
             onClick={clearPlace}
           >
             <Icon name="close" size={17} />
           </button>
-        )}
-        {!value.text && (
+        ) : (
           <span className="grid size-12 shrink-0 place-items-center text-icon-muted">
             <Icon name="pin" size={19} />
           </span>
         )}
       </div>
-      <p
-        id={`${id}-help`}
-        className="mt-2 flex min-h-4.5 items-start gap-1 text-xs leading-normal text-muted"
-      >
-        {value.place ? (
-          <>
-            <Icon name="check" className="mt-px size-3.75 shrink-0 text-accent" />
-            {value.place.municipality ?? value.place.name}
-          </>
-        ) : (
-          t('places.minimum')
-        )}
-      </p>
+      {!value.place && (
+        <p id={`${id}-help`} className="mt-2 min-h-4.5 text-xs leading-normal text-muted">
+          {t('places.minimum')}
+        </p>
+      )}
       <span id={`${id}-instructions`} className="sr-only">
         {t('places.instructions')}
       </span>
@@ -224,15 +223,7 @@ export function PlaceAutocomplete({
               </li>
             ))}
           </ul>
-          {isLoading ? (
-            <p className="flex items-center gap-2.5 px-4.5 py-4.5 text-sm leading-normal wrap-anywhere text-muted">
-              <Icon
-                name="loader"
-                className="size-3.75 shrink-0 animate-spin text-accent motion-reduce:animate-none"
-              />
-              {t('places.loading')}
-            </p>
-          ) : search.isError ? (
+          {search.isError ? (
             <div className="block px-4.5 py-4.5 text-sm leading-normal wrap-anywhere text-muted">
               <p>{t('places.error')}</p>
               <button
@@ -246,15 +237,6 @@ export function PlaceAutocomplete({
           ) : !options.length ? (
             <p className="flex items-center gap-2.5 px-4.5 py-4.5 text-sm leading-normal wrap-anywhere text-muted">
               {t('places.empty', { query: value.text.trim() })}
-            </p>
-          ) : fetchedAt ? (
-            <p className="border-t border-line-subtle px-3.5 py-2.5 text-[11px] leading-normal text-muted">
-              {t('places.fetchedAt', {
-                time: new Intl.DateTimeFormat(i18n.resolvedLanguage, {
-                  dateStyle: 'medium',
-                  timeStyle: 'short',
-                }).format(new Date(fetchedAt)),
-              })}
             </p>
           ) : null}
         </div>

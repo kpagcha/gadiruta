@@ -1,11 +1,12 @@
 /** Render selected-place direct journey search, its shareable URL, and normalized result states. */
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSearchParams } from 'react-router';
 import { DirectJourneyRequestError, type DirectJourneySearchParameters } from '../api/journeys';
 import { Icon } from '../components/Icon';
+import { JourneyDateTimePicker } from '../features/journey-search/JourneyDateTimePicker';
 import { PlaceAutocomplete } from '../features/journey-search/PlaceAutocomplete';
 import type { PlaceFieldValue } from '../features/journey-search/PlaceAutocomplete';
 import {
@@ -13,7 +14,10 @@ import {
   useDirectJourneySearch,
 } from '../features/journey-search/useDirectJourneySearch';
 
-/** Format the present calendar date in the backend's Europe/Madrid timezone for a date input. */
+const VISIBLE_JOURNEY_COUNT = 4;
+const APPROXIMATE_SCHEDULE_DAYS = 60;
+
+/** Format the present calendar date in the backend's Europe/Madrid timezone. */
 function madridToday(): string {
   const parts = new Intl.DateTimeFormat('en-GB', {
     timeZone: 'Europe/Madrid',
@@ -22,10 +26,10 @@ function madridToday(): string {
     day: '2-digit',
   }).formatToParts(new Date());
   const values = Object.fromEntries(parts.map((part) => [part.type, part.value]));
-  return `${values.year}-${values.month}-${values.day}`;
+  return values.year + '-' + values.month + '-' + values.day;
 }
 
-/** Read complete query parameters without treating an arbitrary URL as a request until validation. */
+/** Read a complete direct-search URL only when it has every required parameter. */
 function directJourneyParameters(
   searchParameters: URLSearchParams,
 ): DirectJourneySearchParameters | null {
@@ -37,62 +41,105 @@ function directJourneyParameters(
   return { from, to, date, departAfter: departAfter || null };
 }
 
-/** Present an API clock time without converting a local timetable value through the browser timezone. */
+/** Present an API clock time without converting a local timetable through the browser timezone. */
 function displayTime(value: string): string {
   return value.slice(0, 5);
 }
 
-/** Preserve both draft labels and confirmed identities while editing or swapping journey endpoints. */
+/** Convert an ISO calendar date to a timezone-independent timestamp. */
+function calendarTimestamp(value: string): number {
+  const [year = 0, month = 1, day = 1] = value.split('-').map(Number);
+  return Date.UTC(year, month - 1, day);
+}
+
+/** Flag dates far enough ahead that operators may still change their timetables. */
+function isScheduleApproximate(date: string, today: string): boolean {
+  return (
+    calendarTimestamp(date) - calendarTimestamp(today) >= APPROXIMATE_SCHEDULE_DAYS * 86_400_000
+  );
+}
+
+/** Render the home search form and direct-service results. */
 export function HomePage() {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const [searchParameters, setSearchParameters] = useSearchParams();
   const submittedParameters = directJourneyParameters(searchParameters);
   const directSearch = useDirectJourneySearch(submittedParameters);
-  const initialDate = submittedParameters?.date ?? madridToday();
+  const today = madridToday();
   const [origin, setOrigin] = useState<PlaceFieldValue>({ text: '', place: null });
   const [destination, setDestination] = useState<PlaceFieldValue>({ text: '', place: null });
-  const [journeyDate, setJourneyDate] = useState(initialDate);
+  const [journeyDate, setJourneyDate] = useState(submittedParameters?.date ?? today);
   const [departAfter, setDepartAfter] = useState(submittedParameters?.departAfter ?? '');
   const [swapCount, setSwapCount] = useState(0);
-  const displayedOrigin =
-    origin.place || origin.text
-      ? origin
-      : directSearch.data
-        ? { text: directSearch.data.origin.name, place: directSearch.data.origin }
-        : origin;
-  const displayedDestination =
-    destination.place || destination.text
-      ? destination
-      : directSearch.data
-        ? { text: directSearch.data.destination.name, place: directSearch.data.destination }
-        : destination;
-  const samePlace =
-    displayedOrigin.place !== null && displayedOrigin.place.id === displayedDestination.place?.id;
-  const canSubmit =
-    displayedOrigin.place !== null && displayedDestination.place !== null && !samePlace;
-  const currentYear = madridToday().slice(0, 4);
+  const [expandedSearchKey, setExpandedSearchKey] = useState<string | null>(null);
+  const [showAllJourneyFetch, setShowAllJourneyFetch] = useState<string | null>(null);
+  const hydratedSearchRef = useRef<string | null>(null);
+  const maximumDate = today.slice(0, 4) + '-12-31';
+  const samePlace = origin.place !== null && origin.place.id === destination.place?.id;
+  const canSubmit = origin.place !== null && destination.place !== null && !samePlace;
+  const hasSubmittedSearch = hasDirectJourneyParameters(submittedParameters);
+  const submittedSearchKey = submittedParameters
+    ? [
+        submittedParameters.from,
+        submittedParameters.to,
+        submittedParameters.date,
+        submittedParameters.departAfter ?? '',
+      ].join(':')
+    : null;
+  const isSearching = hasSubmittedSearch && (directSearch.isPending || directSearch.isFetching);
+  const hasDirectServices = Boolean(directSearch.data?.items.length);
+  const showCompactSearch = hasDirectServices && expandedSearchKey !== submittedSearchKey;
+  const schedulesAreApproximate = isScheduleApproximate(journeyDate, today);
+  const showAllJourneys = showAllJourneyFetch === directSearch.data?.fetched_at;
+  const visibleJourneys = directSearch.data
+    ? showAllJourneys
+      ? directSearch.data.items
+      : directSearch.data.items.slice(0, VISIBLE_JOURNEY_COUNT)
+    : [];
+
+  useEffect(() => {
+    if (!directSearch.data || !submittedParameters) return;
+    const searchKey = [
+      submittedParameters.from,
+      submittedParameters.to,
+      submittedParameters.date,
+      submittedParameters.departAfter ?? '',
+    ].join(':');
+    if (hydratedSearchRef.current === searchKey) return;
+    setOrigin((current) =>
+      current.text || current.place
+        ? current
+        : { text: directSearch.data.origin.name, place: directSearch.data.origin },
+    );
+    setDestination((current) =>
+      current.text || current.place
+        ? current
+        : { text: directSearch.data.destination.name, place: directSearch.data.destination },
+    );
+    hydratedSearchRef.current = searchKey;
+  }, [directSearch.data, submittedParameters]);
 
   /** Exchange complete field values, including partially typed input, in one React update. */
   function swapPlaces(): void {
-    setOrigin(displayedDestination);
-    setDestination(displayedOrigin);
+    setOrigin(destination);
+    setDestination(origin);
     setSwapCount((count) => count + 1);
   }
 
-  /** Write a new shareable URL only after both places have confirmed public identities. */
+  /** Write a shareable URL only after both places have confirmed public identities. */
   function submitJourney(event: FormEvent<HTMLFormElement>): void {
     event.preventDefault();
-    if (!displayedOrigin.place || !displayedDestination.place || samePlace) return;
+    if (!origin.place || !destination.place || samePlace) return;
     const nextParameters = new URLSearchParams({
-      from: displayedOrigin.place.slug,
-      to: displayedDestination.place.slug,
+      from: origin.place.slug,
+      to: destination.place.slug,
       date: journeyDate,
     });
     if (departAfter) nextParameters.set('depart_after', departAfter);
     setSearchParameters(nextParameters);
   }
 
-  /** Translate stable API errors without surfacing provider implementation details to the user. */
+  /** Translate stable API errors without exposing provider implementation details. */
   function directSearchError(): string {
     if (!(directSearch.error instanceof DirectJourneyRequestError)) {
       return t('journey.resultsUnavailable');
@@ -106,7 +153,7 @@ export function HomePage() {
     return t('journey.resultsUnavailable');
   }
 
-  /** Format a duration using localized hour and minute fragments rather than timezone-aware dates. */
+  /** Format a duration using localized hour and minute fragments. */
   function durationText(minutes: number): string {
     const hours = Math.floor(minutes / 60);
     const remainingMinutes = minutes % 60;
@@ -115,41 +162,73 @@ export function HomePage() {
     return t('journey.durationHoursMinutes', { hours, minutes: remainingMinutes });
   }
 
-  const hasSubmittedSearch = hasDirectJourneyParameters(submittedParameters);
-  const isSearching = hasSubmittedSearch && (directSearch.isPending || directSearch.isFetching);
+  const pageLayout = hasSubmittedSearch
+    ? 'min-[850px]:grid-cols-[0.86fr_1.14fr]'
+    : 'min-[850px]:grid-cols-[1fr_1.12fr]';
+  const searchPanelClass =
+    'min-w-0 rounded-3xl border border-line bg-surface-card p-6 shadow-(--shadow-card) max-[380px]:p-4.5 min-[850px]:p-8 ' +
+    (hasSubmittedSearch ? 'journey-panel-enter' : '');
 
   return (
     <main
       id="main-content"
-      className="grid gap-10 py-12 min-[850px]:grid-cols-[1fr_1.12fr] min-[850px]:items-start min-[850px]:gap-16.25 min-[850px]:py-20 min-[850px]:pb-21.25"
+      className={
+        'grid gap-10 py-12 min-[850px]:items-start min-[850px]:gap-16.25 min-[850px]:py-20 min-[850px]:pb-21.25 ' +
+        pageLayout
+      }
       tabIndex={-1}
     >
-      <div className="min-[850px]:pt-8.5">
-        <p className="mb-5 text-xs font-[650] tracking-[1.8px] text-accent uppercase">
-          {t('hero.eyebrow')}
-        </p>
-        <h1 className="text-[clamp(44px,7vw,76px)] leading-[1.05] font-[650] tracking-[-2.8px] whitespace-pre-line">
-          {t('hero.title')}
-        </h1>
-        <p className="mt-6 max-w-92.5 text-[17px] leading-[1.65] text-muted max-[380px]:text-base">
-          {t('hero.description')}
-        </p>
-        <p className="mt-8.5 flex items-center gap-3 text-[13px] text-muted">
-          <span
-            className="grid size-9.25 place-items-center rounded-full border border-line-brand text-accent"
-            aria-hidden="true"
-          >
-            <Icon name="gadiruta" size={21} />
-          </span>
-          {t('hero.footnote')}
-        </p>
-      </div>
+      {!hasSubmittedSearch && (
+        <div className="min-[850px]:pt-8.5">
+          <p className="mb-5 text-xs font-[650] tracking-[1.8px] text-accent uppercase">
+            {t('hero.eyebrow')}
+          </p>
+          <h1 className="text-[clamp(44px,7vw,76px)] leading-[1.05] font-[650] tracking-[-2.8px] whitespace-pre-line">
+            {t('hero.title')}
+          </h1>
+          <p className="mt-6 max-w-92.5 text-[17px] leading-[1.65] text-muted max-[380px]:text-base">
+            {t('hero.description')}
+          </p>
+          <p className="mt-8.5 flex items-center gap-3 text-[13px] text-muted">
+            <span
+              className="grid size-9.25 place-items-center rounded-full border border-line-brand text-accent"
+              aria-hidden="true"
+            >
+              <Icon name="gadiruta" size={21} />
+            </span>
+            {t('hero.footnote')}
+          </p>
+        </div>
+      )}
 
-      <div className="grid min-w-0 gap-5">
-        <section
-          className="min-w-0 rounded-3xl border border-line bg-surface-card p-6 shadow-(--shadow-card) max-[380px]:p-4.5 min-[850px]:p-8"
-          aria-labelledby="journey-title"
-        >
+      <section className={searchPanelClass} aria-labelledby="journey-title">
+        {showCompactSearch && origin.place && destination.place && (
+          <div className="min-[850px]:hidden">
+            <button
+              type="button"
+              className="grid w-full gap-3 rounded-2xl bg-surface-input p-3 text-left"
+              aria-label={t('journey.selectionSummary', {
+                origin: origin.place.name,
+                destination: destination.place.name,
+              })}
+              onClick={() => setExpandedSearchKey(submittedSearchKey)}
+            >
+              <span className="flex min-w-0 items-center gap-2 text-sm font-[700] wrap-anywhere">
+                <span className="min-w-0 truncate">{origin.place.name}</span>
+                <Icon name="arrow" className="size-4 shrink-0 text-icon-muted" />
+                <span className="min-w-0 truncate">{destination.place.name}</span>
+              </span>
+              <span className="text-xs font-[650] text-accent">{t('journey.changeSearch')}</span>
+            </button>
+            {schedulesAreApproximate && (
+              <p className="mt-3 text-xs leading-[1.55] text-muted">
+                {t('journey.scheduleApproximation')}
+              </p>
+            )}
+          </div>
+        )}
+
+        <div className={showCompactSearch ? 'hidden min-[850px]:block' : ''}>
           <div className="mb-7.5">
             <h2 id="journey-title" className="text-[23px] font-[650] tracking-[-0.6px]">
               {t('journey.title')}
@@ -161,7 +240,7 @@ export function HomePage() {
               label={t('journey.origin')}
               placeholder={t('journey.originPlaceholder')}
               clearLabel={t('journey.clearOrigin')}
-              value={displayedOrigin}
+              value={origin}
               onChange={setOrigin}
               endpoint="origin"
             />
@@ -182,38 +261,25 @@ export function HomePage() {
               label={t('journey.destination')}
               placeholder={t('journey.destinationPlaceholder')}
               clearLabel={t('journey.clearDestination')}
-              value={displayedDestination}
+              value={destination}
               onChange={setDestination}
               endpoint="destination"
             />
 
             <div className="mt-6.75 border-t border-line pt-5">
-              <div className="grid gap-4 min-[540px]:grid-cols-2">
-                <label className="grid gap-2 text-[13px] font-[650]" htmlFor="journey-date">
-                  {t('journey.date')}
-                  <input
-                    id="journey-date"
-                    className="min-h-12 rounded-xl border border-line-input bg-surface-input px-3 text-[15px] font-normal text-ink outline-none focus:border-accent"
-                    type="date"
-                    min={madridToday()}
-                    max={`${currentYear}-12-31`}
-                    required
-                    value={journeyDate}
-                    onChange={(event) => setJourneyDate(event.target.value)}
-                  />
-                </label>
-                <label className="grid gap-2 text-[13px] font-[650]" htmlFor="journey-time">
-                  {t('journey.time')}
-                  <input
-                    id="journey-time"
-                    className="min-h-12 rounded-xl border border-line-input bg-surface-input px-3 text-[15px] font-normal text-ink outline-none focus:border-accent"
-                    type="time"
-                    value={departAfter}
-                    onChange={(event) => setDepartAfter(event.target.value)}
-                  />
-                </label>
-              </div>
-              <p className="mt-2.5 text-xs leading-normal text-muted">{t('journey.dateHelp')}</p>
+              <JourneyDateTimePicker
+                date={journeyDate}
+                departAfter={departAfter}
+                today={today}
+                maximumDate={maximumDate}
+                onDateChange={setJourneyDate}
+                onDepartAfterChange={setDepartAfter}
+              />
+              {schedulesAreApproximate && (
+                <p className="mt-3 text-xs leading-[1.55] text-muted">
+                  {t('journey.scheduleApproximation')}
+                </p>
+              )}
             </div>
 
             <div
@@ -223,7 +289,7 @@ export function HomePage() {
             >
               {samePlace ? (
                 <p className="text-[13px] leading-normal text-warning">{t('journey.samePlace')}</p>
-              ) : displayedOrigin.place && displayedDestination.place ? (
+              ) : origin.place && destination.place ? (
                 <>
                   <p className="mb-2 text-[11px] tracking-[1px] text-muted uppercase">
                     {t('journey.selectionTitle')}
@@ -231,13 +297,13 @@ export function HomePage() {
                   <p
                     className="flex flex-wrap items-center gap-2.25 text-base font-semibold wrap-anywhere"
                     aria-label={t('journey.selectionSummary', {
-                      origin: displayedOrigin.place.name,
-                      destination: displayedDestination.place.name,
+                      origin: origin.place.name,
+                      destination: destination.place.name,
                     })}
                   >
-                    <span className="max-w-full">{displayedOrigin.place.name}</span>
+                    <span className="max-w-full">{origin.place.name}</span>
                     <Icon name="arrow" className="size-5 shrink-0 text-icon-muted" />
-                    <span className="max-w-full">{displayedDestination.place.name}</span>
+                    <span className="max-w-full">{destination.place.name}</span>
                   </p>
                 </>
               ) : (
@@ -246,116 +312,118 @@ export function HomePage() {
             </div>
             <button
               type="submit"
-              disabled={!canSubmit}
+              disabled={!canSubmit || isSearching}
+              aria-busy={isSearching}
               className="mt-5 flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-accent px-5 text-sm font-[700] text-on-accent transition-opacity hover:enabled:opacity-90 disabled:opacity-45"
             >
-              <Icon name="route" size={18} />
+              <Icon
+                name={isSearching ? 'loader' : 'route'}
+                size={18}
+                className={isSearching ? 'animate-spin motion-reduce:animate-none' : undefined}
+              />
               {t('journey.submit')}
+              {isSearching && <span className="sr-only">{t('journey.resultsLoading')}</span>}
             </button>
           </form>
-          <p className="sr-only" role="status" aria-live="polite">
-            <span key={swapCount}>{swapCount > 0 ? t('journey.swapped') : ''}</span>
-          </p>
-        </section>
+        </div>
+        <p className="sr-only" role="status" aria-live="polite">
+          <span key={swapCount}>{swapCount > 0 ? t('journey.swapped') : ''}</span>
+        </p>
+      </section>
 
-        {hasSubmittedSearch && (
-          <section
-            className="rounded-3xl border border-line bg-surface-card p-6 shadow-(--shadow-card) max-[380px]:p-4.5 min-[850px]:p-8"
-            aria-labelledby="journey-results-title"
-          >
-            <div className="flex flex-wrap items-start justify-between gap-3">
-              <div>
-                <h2 id="journey-results-title" className="text-[21px] font-[650] tracking-[-0.5px]">
-                  {t('journey.resultsTitle')}
-                </h2>
-                {directSearch.data && (
-                  <p className="mt-1 text-sm text-muted">
-                    {t('journey.resultsRoute', {
-                      origin: directSearch.data.origin.name,
-                      destination: directSearch.data.destination.name,
-                    })}
-                  </p>
-                )}
-              </div>
-              {directSearch.data && (
-                <p className="text-xs text-muted">
-                  {t('journey.resultsFetchedAt', {
-                    time: new Intl.DateTimeFormat(i18n.resolvedLanguage, {
-                      dateStyle: 'medium',
-                      timeStyle: 'short',
-                    }).format(new Date(directSearch.data.fetched_at)),
-                  })}
-                </p>
-              )}
-            </div>
-
-            {isSearching ? (
-              <p
-                className="mt-5 flex min-h-15 items-center gap-2.5 text-sm text-muted"
-                role="status"
-              >
-                <Icon
-                  name="loader"
-                  className="size-4 shrink-0 animate-spin text-accent motion-reduce:animate-none"
-                />
-                {t('journey.resultsLoading')}
+      {hasSubmittedSearch && !isSearching && (directSearch.isError || directSearch.data) && (
+        <section
+          className="journey-panel-enter rounded-3xl border border-line bg-surface-card p-6 shadow-(--shadow-card) max-[380px]:p-4.5 min-[850px]:p-8"
+          aria-labelledby="journey-results-title"
+        >
+          <div>
+            <h2 id="journey-results-title" className="text-[21px] font-[650] tracking-[-0.5px]">
+              {t('journey.resultsTitle')}
+            </h2>
+            {directSearch.data && (
+              <p className="mt-1 text-sm text-muted">
+                {t('journey.resultsRoute', {
+                  origin: directSearch.data.origin.name,
+                  destination: directSearch.data.destination.name,
+                })}
               </p>
-            ) : directSearch.isError ? (
-              <div className="mt-5 rounded-xl bg-paper px-4 py-4 text-sm leading-normal text-muted">
-                <p>{directSearchError()}</p>
+            )}
+          </div>
+
+          {directSearch.isError ? (
+            <div className="mt-5 rounded-xl bg-paper px-4 py-4 text-sm leading-normal text-muted">
+              <p>{directSearchError()}</p>
+              <button
+                type="button"
+                className="mt-2 inline-flex min-h-11 items-center bg-transparent px-1.25 text-sm font-[650] text-accent underline decoration-1 underline-offset-4"
+                onClick={() => void directSearch.refetch()}
+              >
+                {t('journey.resultsRetry')}
+              </button>
+            </div>
+          ) : directSearch.data?.items.length ? (
+            <>
+              <ol className="mt-4 grid list-none gap-3 p-0">
+                {visibleJourneys.map((journey, index) => (
+                  <li
+                    key={[
+                      journey.line_code,
+                      journey.departure_time,
+                      journey.arrival_time,
+                      index,
+                    ].join('-')}
+                    className="rounded-xl border border-line-subtle bg-surface-input px-4 py-4"
+                  >
+                    <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+                      <span className="rounded-md bg-surface-active px-2 py-1 text-xs font-[700] text-accent">
+                        {t('journey.line', { line: journey.line_code })}
+                      </span>
+                      <span className="text-xs text-muted">
+                        {durationText(journey.duration_minutes)}
+                      </span>
+                    </div>
+                    <div className="mt-3 flex items-center gap-3 tabular-nums">
+                      <time className="text-[25px] font-[700] tracking-[-0.8px]">
+                        {displayTime(journey.departure_time)}
+                      </time>
+                      <Icon name="arrow" className="size-5 shrink-0 text-icon-muted" />
+                      <time className="text-[25px] font-[700] tracking-[-0.8px]">
+                        {displayTime(journey.arrival_time)}
+                      </time>
+                    </div>
+                    {journey.note && (
+                      <p className="mt-2.5 text-xs leading-[1.55] text-muted">{journey.note}</p>
+                    )}
+                  </li>
+                ))}
+              </ol>
+              {directSearch.data.items.length > VISIBLE_JOURNEY_COUNT && (
                 <button
                   type="button"
-                  className="mt-2 inline-flex min-h-11 items-center bg-transparent px-1.25 text-sm font-[650] text-accent underline decoration-1 underline-offset-4"
-                  onClick={() => void directSearch.refetch()}
+                  className="mt-4 inline-flex min-h-11 items-center bg-transparent px-1.25 text-sm font-[650] text-accent underline decoration-1 underline-offset-4"
+                  onClick={() =>
+                    setShowAllJourneyFetch((current) =>
+                      current === directSearch.data?.fetched_at
+                        ? null
+                        : (directSearch.data?.fetched_at ?? null),
+                    )
+                  }
                 >
-                  {t('journey.resultsRetry')}
+                  {showAllJourneys
+                    ? t('journey.showLess')
+                    : t('journey.showMore', {
+                        count: directSearch.data.items.length - VISIBLE_JOURNEY_COUNT,
+                      })}
                 </button>
-              </div>
-            ) : directSearch.data ? (
-              <>
-                <p className="mt-4 rounded-xl bg-paper px-4 py-3 text-xs leading-[1.6] text-muted">
-                  {t('journey.calendarWarning')}
-                </p>
-                {directSearch.data.items.length ? (
-                  <ol className="mt-4 grid list-none gap-3 p-0">
-                    {directSearch.data.items.map((journey, index) => (
-                      <li
-                        key={`${journey.line_code}-${journey.departure_time}-${journey.arrival_time}-${index}`}
-                        className="rounded-xl border border-line-subtle bg-surface-input px-4 py-4"
-                      >
-                        <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
-                          <span className="rounded-md bg-surface-active px-2 py-1 text-xs font-[700] text-accent">
-                            {t('journey.line', { line: journey.line_code })}
-                          </span>
-                          <span className="text-xs text-muted">
-                            {durationText(journey.duration_minutes)}
-                          </span>
-                        </div>
-                        <div className="mt-3 flex items-center gap-3 tabular-nums">
-                          <time className="text-[25px] font-[700] tracking-[-0.8px]">
-                            {displayTime(journey.departure_time)}
-                          </time>
-                          <Icon name="arrow" className="size-5 shrink-0 text-icon-muted" />
-                          <time className="text-[25px] font-[700] tracking-[-0.8px]">
-                            {displayTime(journey.arrival_time)}
-                          </time>
-                        </div>
-                        {journey.note && (
-                          <p className="mt-2.5 text-xs leading-[1.55] text-muted">{journey.note}</p>
-                        )}
-                      </li>
-                    ))}
-                  </ol>
-                ) : (
-                  <p className="mt-5 rounded-xl bg-paper px-4 py-4 text-sm leading-[1.6] text-muted">
-                    {t('journey.resultsEmpty')}
-                  </p>
-                )}
-              </>
-            ) : null}
-          </section>
-        )}
-      </div>
+              )}
+            </>
+          ) : directSearch.data ? (
+            <p className="mt-5 rounded-xl bg-paper px-4 py-4 text-sm leading-[1.6] text-muted">
+              {t('journey.resultsEmpty')}
+            </p>
+          ) : null}
+        </section>
+      )}
     </main>
   );
 }

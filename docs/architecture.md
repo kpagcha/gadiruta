@@ -197,12 +197,14 @@ text separate from a confirmed public place identity. TanStack Query shares sugg
 between fields, debounces requests by 250 ms, and cancels obsolete requests. Suggestions have a
 five-minute freshness window and a ten-minute inactive lifetime; failed requests are not automatically
 retried, and the error state offers a retry control.
-The homepage adds native date/time controls after both places and writes `from`, `to`, `date`, and
-optional `depart_after` to the URL only on a valid submit. `from` and `to` are readable persistent
-place slugs, not opaque UUIDs. A reload of that URL queries direct services and derives the selected
-labels from the normalized response. Its result card
-handles loading, retryable error, cautious empty, calendar-warning, and service-list states. The
-API clients validate response shape and impose a 25-second request timeout.
+The homepage uses a calendar popover with an optional departure-time input and a resettable “Now”
+chip. It writes `from`, `to`, `date`, and optional `depart_after` to the URL only on a valid submit.
+`from` and `to` are readable persistent place slugs, not opaque UUIDs. A reload of that URL queries
+direct services and derives the selected labels from the normalized response. Loading stays in the
+submit button while the result card is hidden. A successful desktop search puts the editable search
+card in the left column and the service list in the right; on mobile the search card collapses to an
+actionable route summary. The API clients validate response shape and impose a 25-second request
+timeout.
 
 Browser requests use relative `/api/v1/` URLs. Vite proxies `/api/` to Django on port 8000 during
 development and local build preview, so no cross-origin API configuration is needed. Production
@@ -318,8 +320,8 @@ English is the source/fallback language.
 
 A saved EN/ES preference takes priority over the first supported browser language; otherwise the
 UI falls back to English. Storage failures do not prevent switching languages. Bundled resources
-cover all interface text, while official place names remain unchanged. Document language, page
-title, and fetch timestamps follow the active locale.
+cover all interface text, while official place names remain unchanged. Document language and page
+title follow the active locale.
 
 ---
 

@@ -148,3 +148,21 @@
     transform: rotate(360deg);
   }
 }
+
+@keyframes journey-panel-enter {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .journey-panel-enter {
+    animation: journey-panel-enter 260ms ease-out both;
+  }
+}

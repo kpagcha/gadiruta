@@ -259,17 +259,19 @@ the same local Django proxy; it is not a production deployment server.
 
 1. Type `cadiz` into the starting-point field; select Cádiz using Down then Enter.
 2. Type `puerto` into the destination field and choose a suggestion with the pointer.
-3. Keep today's date or choose a later date in the current year, optionally set a departure time, then
-   select **Find transport**. Confirm that the URL receives readable `from` and `to` place slugs,
-   `date`, and optional `depart_after`.
+3. Keep the default **Now** chip or choose a later date in the calendar popover, optionally setting a
+   departure time, then select **Find transport**. Confirm that the URL receives readable `from` and
+   `to` place slugs, `date`, and optional `depart_after`.
 4. Reload or open the resulting URL in a new tab. The selected place labels and result state must be restored.
 5. Swap the places, edit a selected label, and clear a field. Editing must remove its confirmed identity.
 6. Search for an unmatched name and check the autocomplete empty state; an unavailable API should show a retry.
-7. Switch EN/ES, reload to check the saved preference, and try a narrow mobile viewport.
+7. Check that results move beside the search on desktop; in a narrow mobile viewport, the search card
+   should collapse to an actionable route summary.
+8. Switch EN/ES and reload to check the saved preference.
 
-Direct results are CTAN timetable rows, not a transfer planner. Dates outside the current local
-year are deliberately unavailable, public-holiday timing may be inaccurate, and the empty state
-must never imply that public transport is impossible.
+Direct results are CTAN timetable rows, not a transfer planner. Dates outside the current local year
+are deliberately unavailable. The interface asks users to confirm schedules at least 60 days ahead;
+the empty state must never imply that public transport is impossible.
 
 ---
 

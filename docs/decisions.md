@@ -340,8 +340,8 @@ Consequences:
 - The public API exposes provider-neutral line code, departure/arrival times, duration, and an
   optional cleaned source note; it does not claim CTAN mode or operator data that the timetable
   rows do not reliably provide.
-- The API warns every result that calendar accuracy is not guaranteed, and it does not imply that
-  transport is impossible when no direct service is returned.
+- The UI asks users to confirm schedules at least 60 days ahead, when operators may still revise
+  timetables. It does not imply that transport is impossible when no direct service is returned.
 - A future GTFS, Google Maps, or other provider can implement direct search independently of place
   search, provided explicit canonical-place crosswalks exist for that provider.
 - Requests are bounded but a cold search can make several CTAN calls. The one-hour cache avoids

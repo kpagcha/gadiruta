@@ -2,7 +2,11 @@
 import {
   ArrowDownUp,
   ArrowRight,
+  CalendarDays,
+  ChevronLeft,
+  ChevronRight,
   Check,
+  Clock3,
   LoaderCircle,
   MapPin,
   Moon,
@@ -14,7 +18,20 @@ import {
 
 /** Available decorative symbols; accessible names belong to their surrounding controls. */
 export type IconName =
-  'route' | 'gadiruta' | 'pin' | 'swap' | 'close' | 'arrow' | 'check' | 'loader' | 'sun' | 'moon';
+  | 'route'
+  | 'gadiruta'
+  | 'pin'
+  | 'swap'
+  | 'close'
+  | 'arrow'
+  | 'check'
+  | 'loader'
+  | 'sun'
+  | 'moon'
+  | 'clock'
+  | 'calendar'
+  | 'chevronLeft'
+  | 'chevronRight';
 
 const iconComponents: Record<Exclude<IconName, 'gadiruta'>, LucideIcon> = {
   route: Route,
@@ -26,6 +43,10 @@ const iconComponents: Record<Exclude<IconName, 'gadiruta'>, LucideIcon> = {
   loader: LoaderCircle,
   sun: Sun,
   moon: Moon,
+  clock: Clock3,
+  calendar: CalendarDays,
+  chevronLeft: ChevronLeft,
+  chevronRight: ChevronRight,
 };
 
 interface IconProps {

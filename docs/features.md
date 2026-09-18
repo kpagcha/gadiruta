@@ -34,10 +34,11 @@ Status: Initial direct journey search implemented
 - [x] Origin autocomplete.
 - [x] Destination autocomplete.
 - [x] Swap origin/destination, including partially typed input.
-- [x] Date selection, from today through the current local calendar year.
-- [x] Optional “depart at or after” time filtering.
+- [x] Calendar date selection, from today through the current local calendar year, with an optional
+  “depart at or after” time filter and a resettable “Now” default.
 - [x] Direct service lookup through the active direct-journey provider.
-- [x] Journey result cards with line code, departure, arrival, duration, and source note when present.
+- [x] Journey result cards with line code, departure, arrival, duration, and source note when present;
+  initially show four services with an expand control for the rest.
 - [x] Loading state.
 - [x] Cautious empty state.
 - [x] Retryable error state.
@@ -54,14 +55,18 @@ Notes:
   extraction rules.
 - CTAN's exact no-data response is shown as “no direct services returned”; it is not evidence that
   no public-transport trip exists. The UI explicitly says transfers are unsupported.
-- CTAN's calendar selection can be inaccurate on public holidays, so every result displays that
-  warning. Mode/operator claims are intentionally omitted because the dated rows do not supply
+- Searches at least 60 days ahead show a cautious operator-confirmation note. This reflects the
+  practical possibility of later timetable changes without presenting CTAN's calendar response as
+  exact. Mode/operator claims are intentionally omitted because dated CTAN rows do not supply
   reliable per-service values.
 - Shared search URLs use readable canonical place slugs (`from=cadiz&to=jerez`), resolving name
   collisions with municipality context and then a stable numeric suffix when necessary.
-- Place suggestions support loading, empty, and retryable error states. Typing clears any previous
-  selection; users must select a suggestion to confirm a place. Choosing the same origin and
-  destination displays a warning.
+- Place suggestions support loading, empty, and retryable error states. Loading stays in the field
+  as a spinner so an empty popover is never displayed. Typing clears any previous selection; users
+  must select a suggestion to confirm a place. Choosing the same origin and destination displays a
+  warning.
+- After a successful search, desktop presents the search card beside results. On mobile, the card
+  collapses to an actionable origin-to-destination summary that expands to edit the search.
 
 ---
 
@@ -90,7 +95,7 @@ Status: Population-centre search API and autocomplete implemented; detail pages 
 - [x] Provider-neutral catalogue/search boundary with CTAN as the current place-data implementation.
 - [x] Validated CTAN responses, saved fixtures, and offline error/timeout/cache tests.
 - [x] Distinguish empty results from unavailable provider data.
-- [x] Select population centres in the homepage autocomplete, with municipality and fetch timestamp.
+- [x] Select population centres in the homepage autocomplete, with municipality context.
 - [ ] Search/open a stop or population centre.
 - [ ] Show serving lines.
 - [ ] Show upcoming services where supported.
