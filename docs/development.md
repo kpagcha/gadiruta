@@ -260,8 +260,9 @@ the same local Django proxy; it is not a production deployment server.
 1. Type `cadiz` into the starting-point field; select Cádiz using Down then Enter.
 2. Type `puerto` into the destination field and choose a suggestion with the pointer.
 3. Keep the default **Now** chip or choose a later date in the calendar popover, optionally setting a
-   departure time, then select **Find transport**. Confirm that the URL receives readable `from` and
-   `to` place slugs, `date`, and optional `depart_after`.
+   departure time. Selecting the second place should start the search and write readable `from` and
+   `to` place slugs, `date`, and optional `depart_after` to the URL. Select **Find transport** again
+   to refresh that same search.
 4. Reload or open the resulting URL in a new tab. The selected place labels and result state must be restored.
 5. Swap the places, edit a selected label, and clear a field. Editing must remove its confirmed identity.
 6. Search for an unmatched name and check the autocomplete empty state; an unavailable API should show a retry.

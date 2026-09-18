@@ -38,7 +38,7 @@ Status: Initial direct journey search implemented
   “depart at or after” time filter and a resettable “Now” default.
 - [x] Direct service lookup through the active direct-journey provider.
 - [x] Journey result cards with line code, departure, arrival, duration, and source note when present;
-  initially show four services with an expand control for the rest.
+  initially show four services and reveal the next four with each “Show more” action.
 - [x] Loading state.
 - [x] Cautious empty state.
 - [x] Retryable error state.
@@ -65,6 +65,8 @@ Notes:
   as a spinner so an empty popover is never displayed. Typing clears any previous selection; users
   must select a suggestion to confirm a place. Choosing the same origin and destination displays a
   warning.
+- Selecting the second confirmed place automatically starts a direct search. The submit button also
+  refreshes a search whose places, date, and optional departure time are unchanged.
 - After a successful search, desktop presents the search card beside results. On mobile, the card
   collapses to an actionable origin-to-destination summary that expands to edit the search.
 

@@ -136,7 +136,7 @@ export function PlaceAutocomplete({
           aria-expanded={showPopup}
           aria-controls={showPopup ? listId : undefined}
           aria-activedescendant={activeOption ? `${id}-${activeOption.id}` : undefined}
-          aria-describedby={value.place ? `${id}-instructions` : `${id}-help ${id}-instructions`}
+          aria-describedby={`${id}-instructions`}
           autoComplete="off"
           autoCorrect="off"
           autoCapitalize="none"
@@ -175,11 +175,7 @@ export function PlaceAutocomplete({
           </span>
         )}
       </div>
-      {!value.place && (
-        <p id={`${id}-help`} className="mt-2 min-h-4.5 text-xs leading-normal text-muted">
-          {t('places.minimum')}
-        </p>
-      )}
+      <div className="mt-2 min-h-4.5" aria-hidden="true" />
       <span id={`${id}-instructions`} className="sr-only">
         {t('places.instructions')}
       </span>

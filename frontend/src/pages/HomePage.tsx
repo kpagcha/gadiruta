@@ -17,6 +17,12 @@ import {
 const VISIBLE_JOURNEY_COUNT = 4;
 const APPROXIMATE_SCHEDULE_DAYS = 60;
 
+/** Track how many services from one fetched result should be visible. */
+interface JourneyResultPage {
+  fetchedAt: string;
+  page: number;
+}
+
 /** Format the present calendar date in the backend's Europe/Madrid timezone. */
 function madridToday(): string {
   const parts = new Intl.DateTimeFormat('en-GB', {
@@ -72,7 +78,7 @@ export function HomePage() {
   const [departAfter, setDepartAfter] = useState(submittedParameters?.departAfter ?? '');
   const [swapCount, setSwapCount] = useState(0);
   const [expandedSearchKey, setExpandedSearchKey] = useState<string | null>(null);
-  const [showAllJourneyFetch, setShowAllJourneyFetch] = useState<string | null>(null);
+  const [journeyResultPage, setJourneyResultPage] = useState<JourneyResultPage | null>(null);
   const hydratedSearchRef = useRef<string | null>(null);
   const maximumDate = today.slice(0, 4) + '-12-31';
   const samePlace = origin.place !== null && origin.place.id === destination.place?.id;
@@ -90,11 +96,13 @@ export function HomePage() {
   const hasDirectServices = Boolean(directSearch.data?.items.length);
   const showCompactSearch = hasDirectServices && expandedSearchKey !== submittedSearchKey;
   const schedulesAreApproximate = isScheduleApproximate(journeyDate, today);
-  const showAllJourneys = showAllJourneyFetch === directSearch.data?.fetched_at;
+  const currentJourneyPage =
+    journeyResultPage !== null && journeyResultPage.fetchedAt === directSearch.data?.fetched_at
+      ? journeyResultPage.page
+      : 1;
+  const visibleJourneyCount = currentJourneyPage * VISIBLE_JOURNEY_COUNT;
   const visibleJourneys = directSearch.data
-    ? showAllJourneys
-      ? directSearch.data.items
-      : directSearch.data.items.slice(0, VISIBLE_JOURNEY_COUNT)
+    ? directSearch.data.items.slice(0, visibleJourneyCount)
     : [];
 
   useEffect(() => {
@@ -124,19 +132,52 @@ export function HomePage() {
     setOrigin(destination);
     setDestination(origin);
     setSwapCount((count) => count + 1);
+    if (destination.place && origin.place) searchJourneys(destination, origin);
   }
 
-  /** Write a shareable URL only after both places have confirmed public identities. */
-  function submitJourney(event: FormEvent<HTMLFormElement>): void {
-    event.preventDefault();
-    if (!origin.place || !destination.place || samePlace) return;
+  /** Start a new URL-defined search or refresh the current one when its parameters are unchanged. */
+  function searchJourneys(nextOrigin: PlaceFieldValue, nextDestination: PlaceFieldValue): void {
+    if (
+      !nextOrigin.place ||
+      !nextDestination.place ||
+      nextOrigin.place.id === nextDestination.place.id
+    ) {
+      return;
+    }
     const nextParameters = new URLSearchParams({
-      from: origin.place.slug,
-      to: destination.place.slug,
+      from: nextOrigin.place.slug,
+      to: nextDestination.place.slug,
       date: journeyDate,
     });
     if (departAfter) nextParameters.set('depart_after', departAfter);
+    const isCurrentSearch =
+      submittedParameters?.from === nextOrigin.place.slug &&
+      submittedParameters.to === nextDestination.place.slug &&
+      submittedParameters.date === journeyDate &&
+      submittedParameters.departAfter === (departAfter || null);
+    if (isCurrentSearch) {
+      void directSearch.refetch();
+      return;
+    }
     setSearchParameters(nextParameters);
+  }
+
+  /** Update the origin and automatically search once the destination is already confirmed. */
+  function updateOrigin(nextOrigin: PlaceFieldValue): void {
+    setOrigin(nextOrigin);
+    if (nextOrigin.place && destination.place) searchJourneys(nextOrigin, destination);
+  }
+
+  /** Update the destination and automatically search once the origin is already confirmed. */
+  function updateDestination(nextDestination: PlaceFieldValue): void {
+    setDestination(nextDestination);
+    if (origin.place && nextDestination.place) searchJourneys(origin, nextDestination);
+  }
+
+  /** Allow the button to refresh the current search in addition to submitting a changed route. */
+  function submitJourney(event: FormEvent<HTMLFormElement>): void {
+    event.preventDefault();
+    searchJourneys(origin, destination);
   }
 
   /** Translate stable API errors without exposing provider implementation details. */
@@ -241,7 +282,7 @@ export function HomePage() {
               placeholder={t('journey.originPlaceholder')}
               clearLabel={t('journey.clearOrigin')}
               value={origin}
-              onChange={setOrigin}
+              onChange={updateOrigin}
               endpoint="origin"
             />
             <div className="flex min-h-13.25 items-center justify-end gap-3">
@@ -262,7 +303,7 @@ export function HomePage() {
               placeholder={t('journey.destinationPlaceholder')}
               clearLabel={t('journey.clearDestination')}
               value={destination}
-              onChange={setDestination}
+              onChange={updateDestination}
               endpoint="destination"
             />
 
@@ -397,23 +438,19 @@ export function HomePage() {
                   </li>
                 ))}
               </ol>
-              {directSearch.data.items.length > VISIBLE_JOURNEY_COUNT && (
+              {visibleJourneys.length < directSearch.data.items.length && (
                 <button
                   type="button"
                   className="mt-4 inline-flex min-h-11 items-center bg-transparent px-1.25 text-sm font-[650] text-accent underline decoration-1 underline-offset-4"
                   onClick={() =>
-                    setShowAllJourneyFetch((current) =>
-                      current === directSearch.data?.fetched_at
-                        ? null
-                        : (directSearch.data?.fetched_at ?? null),
+                    setJourneyResultPage((current) =>
+                      current?.fetchedAt === directSearch.data?.fetched_at
+                        ? { ...current, page: current.page + 1 }
+                        : { fetchedAt: directSearch.data?.fetched_at ?? '', page: 2 },
                     )
                   }
                 >
-                  {showAllJourneys
-                    ? t('journey.showLess')
-                    : t('journey.showMore', {
-                        count: directSearch.data.items.length - VISIBLE_JOURNEY_COUNT,
-                      })}
+                  {t('journey.showMore')}
                 </button>
               )}
             </>
