@@ -2,7 +2,7 @@
 
 from typing import Protocol
 
-from transport.domain import Place
+from transport.domain import ProviderPlace
 
 
 class ProviderError(Exception):
@@ -10,12 +10,14 @@ class ProviderError(Exception):
 
 
 class PlaceProvider(Protocol):
-    """Supply normalized population centres for the application's place catalogue."""
+    """Supply provider-scoped population centres for the application's place catalogue."""
 
-    def get_places(self) -> tuple[Place, ...]:
-        """Return validated places, allowing an empty catalogue, or raise ProviderError.
+    provider_key: str
 
-        Implementations own retrieval, normalization, and resource cleanup. Public IDs must
-        remain stable across fetches and label changes. Caching belongs to the application.
+    def get_places(self) -> tuple[ProviderPlace, ...]:
+        """Return validated provider places, allowing an empty catalogue, or raise ProviderError.
+
+        Implementations own retrieval, normalization, provider IDs, and resource cleanup. Public
+        Gadiruta identity and caching belong to the application.
         """
         ...

@@ -15,6 +15,15 @@ class Place:
 
 
 @dataclass(frozen=True)
+class ProviderPlace:
+    """A provider-scoped population centre before Gadiruta resolves public identity."""
+
+    external_id: str
+    name: str
+    municipality: str | None
+
+
+@dataclass(frozen=True)
 class PlaceCatalog:
     """An immutable location snapshot with the time its provider fetch completed."""
 

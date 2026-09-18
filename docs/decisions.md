@@ -277,3 +277,32 @@ Consequences:
   expose no upstream details.
 - Multi-provider merging and reverse mapping of public IDs for future capabilities remain separate
   design work; neither is required for today's place catalogue.
+
+---
+
+## 2026-09-18 — Persist canonical place identities and provider crosswalks
+
+Context:
+
+The first place provider derived public UUIDs directly from CTAN population-centre IDs. That kept
+the initial API simple, but a provider replacement would otherwise change public IDs, invalidate
+selected places, and make future saved links or favourites difficult to preserve.
+
+Decision:
+
+Persist canonical places and provider-reference crosswalks in PostgreSQL. Keep the existing CTAN
+UUIDv5 values as canonical IDs for every current CTAN population-centre record. The active provider
+refreshes canonical display labels during a successful catalogue cache refresh. New provider records
+without a crosswalk create a fresh UUID4 canonical place; never infer a crosswalk by matching labels.
+
+Use one environment-selected place provider per deployment, defaulting to CTAN. Do not add runtime
+fallback, provider merging, or a universal transport-provider interface. Add a direct-journey
+provider contract only when direct journey search is implemented.
+
+Consequences:
+
+- The public places API remains unchanged, including every existing CTAN UUID.
+- Place search now requires PostgreSQL to resolve provider records into canonical identities.
+- A later GTFS or commercial-provider adapter can add explicit references to existing canonical
+  places; unmatched records remain distinct until a deliberate crosswalk is supplied.
+- Full backend tests and pre-push checks require the configured PostgreSQL test database.

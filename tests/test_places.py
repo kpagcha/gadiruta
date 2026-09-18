@@ -17,6 +17,8 @@ from transport.services import places as service
 NUCLEOS = "/v1/Consorcios/2/nucleos"
 MUNICIPIOS = "/v1/Consorcios/2/municipios/"
 
+pytestmark = pytest.mark.django_db
+
 
 @dataclass
 class CTANMock:

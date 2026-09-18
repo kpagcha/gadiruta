@@ -50,7 +50,7 @@ repos:
         pass_filenames: false
       - id: backend-tests
         name: Backend tests (pytest)
-        entry: uv run --locked pytest
+        entry: uv run --locked --env-file .env pytest
         language: system
         stages: [pre-push]
         always_run: true
@@ -64,7 +64,14 @@ repos:
         pass_filenames: false
       - id: django-check
         name: Django system checks
-        entry: uv run --locked --env-file .env.example python manage.py check
+        entry: uv run --locked --env-file .env python manage.py check
+        language: system
+        stages: [pre-push]
+        always_run: true
+        pass_filenames: false
+      - id: django-migrations
+        name: Django migration consistency
+        entry: uv run --locked --env-file .env python manage.py makemigrations --check --dry-run
         language: system
         stages: [pre-push]
         always_run: true

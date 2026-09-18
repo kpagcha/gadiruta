@@ -124,24 +124,27 @@ uv run --locked --env-file .env python manage.py runserver
 ```
 
 The API server defaults to http://127.0.0.1:8000. Start the frontend separately as described below.
-The liveness and place-search APIs do not require a database connection. Django's normal `runserver`
-migration check and the scaffold's admin require a configured database.
+The liveness API does not require a database connection. Place search resolves provider records
+through PostgreSQL-backed canonical identities, so it requires a configured database. Django's
+normal `runserver` migration check and the scaffold's admin also require a configured database.
 
 ### Checks and tests
 
 ```powershell
-uv run --locked --env-file .env.example python manage.py check
-uv run --locked pytest
+uv run --locked --env-file .env python manage.py check
+uv run --locked --env-file .env python manage.py makemigrations --check --dry-run
+uv run --locked --env-file .env pytest
 uv run --locked ruff check .
 uv run --locked ruff format --check .
 uv run --locked mypy
 ```
 
-The current tests run without an environment file, PostgreSQL connection, or CTAN access.
-[`pytest-env`](https://github.com/pytest-dev/pytest-env) supplies the test-only secret key and debug
-setting from `pyproject.toml` before Django initializes. These two values override inherited
-environment values during pytest runs only. Normal application startup still requires a configured
-`DJANGO_SECRET_KEY`.
+The test suite requires PostgreSQL because canonical place identities and provider references are
+persisted. Supply the database connection through `.env`; the configured role must be able to create
+the test database. Tests still do not contact CTAN. [`pytest-env`](https://github.com/pytest-env)
+supplies the test-only secret key and debug setting from `pyproject.toml` before Django initializes.
+These two values override inherited environment values during pytest runs only. Normal application
+startup still requires a configured `DJANGO_SECRET_KEY`.
 
 In PyCharm, select the project's `.venv` interpreter and use the pytest runner with the repository
 root as the working directory. Individual test modules can run directly without extra environment
@@ -157,9 +160,9 @@ Python interpreter and Node runtime, then choose the relevant configuration in t
 run-configuration menu. The configurations contain no environment values, secrets, or
 machine-specific runtime paths.
 
-Database access in pytest requires an explicit `django_db` marker or `db` fixture; future database
-tests must use PostgreSQL and a role that can create the test database. Supply the database
-connection with `uv run --locked --env-file .env pytest` when running those tests.
+Database access in pytest requires an explicit `django_db` marker or `db` fixture. Database tests
+use PostgreSQL and a role that can create the test database; run the complete suite with
+`uv run --locked --env-file .env pytest`.
 
 Ruff handles linting, import ordering, and formatting. Use `uv run ruff format .` to format source.
 mypy checks project code, including typed function bodies; untyped third-party imports are allowed
@@ -257,6 +260,7 @@ Settings read the process environment; `.env` is loaded only when explicitly pas
 | `DJANGO_SECRET_KEY` | Required; startup fails if missing or blank. |
 | `DJANGO_DEBUG` | `false`; accepts `true` or `false`, ignoring case/outer whitespace. |
 | `DJANGO_ALLOWED_HOSTS` | `localhost,127.0.0.1,[::1]`; comma-separated, blank entries ignored. |
+| `GADIRUTA_PLACE_PROVIDER` | `ctan`; the one active population-centre provider. Other values fail startup until implemented. |
 | `POSTGRES_DB` | `gadiruta` |
 | `POSTGRES_USER` | `gadiruta` |
 | `POSTGRES_PASSWORD` | Empty; set for the configured database role. |
@@ -265,8 +269,7 @@ Settings read the process environment; `.env` is loaded only when explicitly pas
 
 The example explicitly enables debug mode. It is not production configuration. Set the real
 deployment hosts, secret, and HTTPS settings before deployment. No CORS settings exist yet. CTAN
-requests use the fixed HTTPS API base and consortium `2`; no API key or additional environment
-variables are needed for place search.
+requests use the fixed HTTPS API base and consortium `2`; no API key is needed for place search.
 
 ---
 
@@ -291,8 +294,10 @@ uv run --locked --env-file .env python manage.py check --database default
 uv run --locked --env-file .env python manage.py migrate --check
 ```
 
-No transport models or synchronization commands exist yet. The original local SQLite file is not
-used by the new configuration and is not automatically removed or migrated.
+`CanonicalPlace` and `ProviderPlaceReference` persist stable public place identities and active
+provider crosswalks. A successful place-catalogue refresh synchronizes them before search results
+are cached; no separate synchronization command exists. The original local SQLite file is not used
+by the new configuration and is not automatically removed or migrated.
 
 Do not commit local database files/dumps unless they are intentional test fixtures.
 
@@ -310,7 +315,7 @@ tests/fixtures/ctan/
 
 The fixture README and `metadata.json` record provenance. CTAN tests use `httpx.MockTransport` and the
 default test fixture rejects live HTTPX transport calls. Cache tests isolate the place-catalogue
-key; they do not require PostgreSQL or an external cache service.
+key. Tests that reconcile canonical identities use the configured PostgreSQL test database.
 
 Provider-neutral catalogue/API tests use a structural `PlaceProvider` stub instead of CTAN
 fixtures. Replace the service's provider factory in these tests; do not patch HTTP clients into
@@ -470,15 +475,14 @@ text checkouts on LF endings across Windows and Unix, matching the formatters.
 
 #### Pre-push: correctness checks
 
-Pushes run the full backend pytest suite, mypy, Django's system checks with
-`.env.example`, and the frontend production build. These checks run even for documentation-only
-changes. The build includes TypeScript checking and writes only ignored `frontend/dist/` output;
-no frontend automated tests are configured or required while they remain deferred.
+Pushes run the full backend pytest suite, mypy, Django's system and migration-consistency checks
+with `.env`, and the frontend production build. PostgreSQL must be available and the configured
+role must be able to create the test database. These checks run even for documentation-only changes.
+The build includes TypeScript checking and writes only ignored `frontend/dist/` output; no frontend
+automated tests are configured or required while they remain deferred.
 
-Current tests and system checks need neither PostgreSQL nor live CTAN access. The hook does not
-load a private `.env`, apply migrations, start servers, or perform dependency security audits.
-When database-backed tests or transport models are introduced, revisit the prerequisites and add a
-missing-migrations check without applying migrations automatically.
+The hooks do not contact live CTAN, apply migrations, start servers, or perform dependency security
+audits. They load the private `.env` only to connect tests and Django checks to local PostgreSQL.
 
 Run the pre-push command above before pushing to diagnose failures locally. These hooks check the
 current checkout, not an isolated copy of each pushed commit; use a clean checkout of the branch

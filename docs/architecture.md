@@ -98,16 +98,20 @@ Responsibilities:
 
 ### Provider capability boundary
 
-`PlaceProvider` in `transport/providers/base.py` defines only the implemented place capability:
-`get_places()` returns normalized `Place` values or raises `ProviderError`. Implementations own
-retrieval, normalization, and resource cleanup; the application owns caching and search behavior.
+`PlaceProvider` in `transport/providers/base.py` defines only the implemented place capability.
+It returns normalized provider-scoped records with external IDs and labels, or raises
+`ProviderError`; the application resolves them to persistent public `Place` values. Implementations
+own retrieval, normalization, external identifiers, and resource cleanup. The application owns
+canonical identity, caching, and search behavior.
 
-`transport/providers/wiring.py` is the explicit composition point that selects `CTANPlaceProvider`
-for Cádiz. Services call this factory without importing the concrete integration. API handlers
-catch `ProviderError` and return application-level errors without logging provider error details.
+`transport/providers/wiring.py` is the explicit composition point for one deployment-selected
+provider. `GADIRUTA_PLACE_PROVIDER=ctan` is the only supported value today. Services call this
+factory without importing the concrete integration. API handlers catch `ProviderError` and return
+application-level errors without logging provider or database details.
 
 Add other capability contracts only when needed; there is no monolithic transport provider,
-provider registry, dynamic selection, or multi-provider catalogue aggregation yet.
+automatic fallback, or multi-provider aggregation. Direct-journey work will add its own contract
+when that feature starts.
 
 ### CTAN integration layer
 
@@ -115,18 +119,18 @@ provider registry, dynamic selection, or multi-provider catalogue aggregation ye
 - Parse and validate CTAN responses.
 - Normalize provider-specific fields.
 - Isolate CTAN-specific identifiers and quirks.
-- Join centre/municipality records and assign opaque, stable public place IDs.
+- Join centre/municipality records and retain CTAN external IDs.
 - Translate CTAN exceptions to `ProviderError` at the capability implementation boundary.
 
 Raw CTAN payloads must not become Gadiruta's public API contract.
 
 The HTTP client validates provider records with Pydantic. CTAN identifiers, relationships, and zone
-fields remain in integration records. The adapter produces immutable domain values containing only
-an opaque public ID, name, and optional municipality label. `CTANPlaceProvider` fetches and joins
-the required resources, skipping municipality retrieval when there are no centres. Place services
-cache the normalized catalogue and perform local accent-insensitive matching and ranking.
-The API explicitly selects public fields and does not interpret provider identity.
-The transport package has no Django models or migrations yet.
+fields remain in integration records. The adapter produces immutable provider records containing an
+external ID, name, and optional municipality label. `CTANPlaceProvider` fetches and joins the
+required resources, skipping municipality retrieval when there are no centres. Place services map
+these records to canonical database identities, cache the public catalogue, and perform local
+accent-insensitive matching and ranking. The API explicitly selects public fields and does not
+interpret provider identity.
 
 ---
 
@@ -226,22 +230,20 @@ attribution and disclaimer.
 
 ## Persistence and caching
 
-The initial population-centre catalogue uses Django's default local-memory cache with a one-hour
-TTL, shared across search queries within each process. The timestamp reflects the completed fetch,
-not the upstream publication time. A valid empty catalogue is cacheable; failures are not. Invalid
-individual records are skipped, but a nonempty response containing no usable records is an error.
-An unexpired catalogue can serve requests during provider outages. There is no stale-on-error
-fallback after expiry, background refresh, or shared multi-worker cache yet. Concurrent cold
-requests can perform duplicate fetches.
+The population-centre catalogue uses Django's default local-memory cache with a one-hour TTL,
+shared across search queries within each process. On a cache miss, a successful provider fetch
+upserts canonical places and provider-reference crosswalks in PostgreSQL before the public
+catalogue is cached. The timestamp reflects the completed fetch, not the upstream publication
+time. A valid empty catalogue is cacheable; failures are not. An unexpired catalogue can serve
+requests during provider outages. There is no stale-on-error fallback, background refresh, or
+shared multi-worker cache yet.
 
-The versioned cache key identifies Gadiruta's catalogue, not a CTAN endpoint or consortium. Its
-version changes when the cached domain shape changes. Revisit the namespace if provider selection
-becomes configurable or catalogues are shared across deployments.
-
-Public place IDs use deterministic UUIDs derived from scoped provider identity, independently of
-display names and catalogue order; see `docs/decisions.md`. No transport data is persisted yet.
-
-PostgreSQL may hold normalized or cached provider data.
+The versioned cache key identifies Gadiruta's public catalogue rather than an upstream endpoint.
+`CanonicalPlace` holds immutable public UUIDs and current labels. `ProviderPlaceReference` maps a
+provider key plus external ID to that identity. Existing CTAN population-centre records retain the
+UUIDv5 values previously exposed by the API; unmapped records from a future provider receive new
+UUID4 identities. Records are never matched by labels automatically, so deliberate crosswalks can
+be added later without risking false matches.
 
 Potential persisted entities include:
 
@@ -301,9 +303,10 @@ title, and fetch timestamps follow the active locale.
 
 Normal automated tests should not depend on live provider availability.
 
-Service/API boundary tests use a small structural `PlaceProvider` stub with normalized places and
-neutral errors, without CTAN fields or HTTP. They cover ranking, caching, empty results, short
-queries, and safe error responses independently of the current integration.
+Service/API boundary tests use a small structural `PlaceProvider` stub with provider-scoped records
+and neutral errors, without CTAN HTTP. PostgreSQL-backed tests cover canonical UUID preservation,
+reference reuse, label refreshes, and unmapped-provider behavior. They also cover ranking, caching,
+empty results, short queries, and safe error responses independently of the current integration.
 
 Saved CTAN fixtures and mock HTTP transports cover the client, adapters, concrete provider, and
 end-to-end API regressions. Provider tests also verify error translation and HTTP resource cleanup.

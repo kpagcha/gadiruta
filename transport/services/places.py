@@ -7,8 +7,9 @@ from django.utils import timezone
 
 from transport.domain import Place, PlaceCatalog, PlaceSearchResult
 from transport.providers.wiring import get_place_provider
+from transport.services.place_identities import reconcile_provider_places
 
-CACHE_KEY = "gadiruta:places:catalog:v2"
+CACHE_KEY = "gadiruta:places:catalog:v3"
 CACHE_TTL_SECONDS = 60 * 60
 
 
@@ -29,7 +30,8 @@ def get_place_catalog() -> PlaceCatalog:
     if isinstance(cached, PlaceCatalog):
         return cached
 
-    places = get_place_provider().get_places()
+    provider = get_place_provider()
+    places = reconcile_provider_places(provider.provider_key, provider.get_places())
     catalog = PlaceCatalog(places=places, fetched_at=timezone.now())
     cache.set(CACHE_KEY, catalog, timeout=CACHE_TTL_SECONDS)
     return catalog

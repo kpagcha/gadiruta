@@ -8,7 +8,7 @@ from django.core.cache import cache
 from django.test import Client
 from django.utils import timezone
 
-from transport.domain import Place
+from transport.domain import ProviderPlace
 from transport.providers.base import PlaceProvider, ProviderError
 from transport.services import places as service
 
@@ -17,11 +17,12 @@ from transport.services import places as service
 class StubPlaceProvider:
     """Supply normalized test locations or a failure while counting catalogue fetches."""
 
-    places: tuple[Place, ...]
+    provider_key: str
+    places: tuple[ProviderPlace, ...]
     error: Exception | None = None
     calls: int = 0
 
-    def get_places(self) -> tuple[Place, ...]:
+    def get_places(self) -> tuple[ProviderPlace, ...]:
         """Return the configured snapshot or raise the selected failure without using HTTP."""
         self.calls += 1
         if self.error is not None:
@@ -33,10 +34,11 @@ class StubPlaceProvider:
 def place_provider(monkeypatch: pytest.MonkeyPatch) -> StubPlaceProvider:
     """Replace provider selection with a structural implementation of only the place capability."""
     provider = StubPlaceProvider(
+        provider_key="stub",
         places=(
-            Place(id=UUID(int=1), name="Centro", municipality="Bahía"),
-            Place(id=UUID(int=2), name="Bahía", municipality=None),
-        )
+            ProviderPlace(external_id="centre", name="Centro", municipality="Bahía"),
+            ProviderPlace(external_id="bay", name="Bahía", municipality=None),
+        ),
     )
 
     def select_provider() -> PlaceProvider:
@@ -47,34 +49,39 @@ def place_provider(monkeypatch: pytest.MonkeyPatch) -> StubPlaceProvider:
     return provider
 
 
+pytestmark = pytest.mark.django_db
+
+
 def test_search_ranks_and_caches_normalized_provider_places(
     place_provider: StubPlaceProvider,
 ) -> None:
     """Search and reuse a complete Gadiruta snapshot without provider IDs or parsing knowledge."""
     first = service.search_places("  BAHIA  ", limit=1)
-    assert first.places == (place_provider.places[1],)
+    assert [place.name for place in first.places] == ["Bahía"]
     assert first.fetched_at is not None
     assert timezone.is_aware(first.fetched_at)
     second = service.search_places("bahía")
-    assert second.places == tuple(reversed(place_provider.places))
+    assert [place.name for place in second.places] == ["Bahía", "Centro"]
     assert second.fetched_at == first.fetched_at
     assert place_provider.calls == 1
 
 
-def test_api_accepts_a_provider_without_upstream_metadata(
+def test_api_accepts_a_provider_with_provider_scoped_metadata(
     client: Client, place_provider: StubPlaceProvider
 ) -> None:
-    """Return the unchanged public schema for normalized locations from another implementation."""
+    """Return the unchanged public schema after provider references are reconciled."""
     response = client.get("/api/v1/places", {"q": "bahia centro"})
     assert response.status_code == 200
-    assert response.json()["items"] == [
+    items = response.json()["items"]
+    assert items == [
         {
-            "id": str(place_provider.places[0].id),
+            "id": items[0]["id"],
             "kind": "population_centre",
             "name": "Centro",
             "municipality": "Bahía",
         }
     ]
+    assert UUID(items[0]["id"]).version == 4
     assert response.json()["fetched_at"] is not None
 
 

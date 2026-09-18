@@ -33,6 +33,10 @@ if debug_value not in {"true", "false"}:
     raise ImproperlyConfigured("DJANGO_DEBUG must be true or false.")
 DEBUG = debug_value == "true"
 
+GADIRUTA_PLACE_PROVIDER = os.environ.get("GADIRUTA_PLACE_PROVIDER", "ctan").strip().lower()
+if not GADIRUTA_PLACE_PROVIDER:
+    raise ImproperlyConfigured("GADIRUTA_PLACE_PROVIDER must not be blank.")
+
 ALLOWED_HOSTS = [
     host.strip()
     for host in os.environ.get("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1,[::1]").split(",")
@@ -50,6 +54,7 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "ninja",
+    "transport.apps.TransportConfig",
 ]
 
 MIDDLEWARE = [

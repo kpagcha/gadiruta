@@ -4,6 +4,8 @@ from pathlib import Path
 
 import httpx
 import pytest
+from django.conf import settings
+from django.core.exceptions import ImproperlyConfigured
 
 from transport.integrations.ctan.client import CTANError, CTANInvalidResponse, CTANUnavailable
 from transport.integrations.ctan.provider import CTANPlaceProvider
@@ -27,8 +29,17 @@ def test_default_place_provider_is_ctan() -> None:
     assert isinstance(get_place_provider(), CTANPlaceProvider)
 
 
+def test_unsupported_configured_place_provider_is_rejected(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Reject a configured provider before an unsupported implementation can serve data."""
+    monkeypatch.setattr(settings, "GADIRUTA_PLACE_PROVIDER", "unsupported")
+    with pytest.raises(ImproperlyConfigured, match="GADIRUTA_PLACE_PROVIDER"):
+        get_place_provider()
+
+
 def test_provider_returns_the_saved_catalogue_and_closes_http(ctan_fixture_dir: Path) -> None:
-    """Expose joined public places through the capability contract and close the owned transport."""
+    """Expose joined provider places through the capability contract and close the transport."""
 
     def respond(request: httpx.Request) -> httpx.Response:
         """Serve the verified resource requested by the real integration client."""
@@ -40,9 +51,7 @@ def test_provider_returns_the_saved_catalogue_and_closes_http(ctan_fixture_dir: 
     places = provider.get_places()
     assert len(places) == 37
     assert all(place.municipality for place in places)
-    assert str(next(place.id for place in places if place.name == "Cádiz")) == (
-        "a222989e-0a14-5920-872e-5ae77baea6b7"
-    )
+    assert next(place.external_id for place in places if place.name == "Cádiz") == "1"
     assert transport.is_closed
 
 
