@@ -17,6 +17,7 @@ from transport.providers.base import ProviderError
 from transport.providers.wiring import get_direct_journey_provider
 
 CACHE_TTL_SECONDS = 60 * 60
+EARLIER_DEPARTURE_PAGE_SIZE = 4
 
 
 class JourneyPlaceNotFoundError(Exception):
@@ -32,13 +33,19 @@ class JourneyDateUnavailableError(Exception):
 
 
 def search_direct_journeys(
-    origin_slug: str, destination_slug: str, journey_date: date, depart_after: time | None
+    origin_slug: str,
+    destination_slug: str,
+    journey_date: date,
+    depart_after: time | None = None,
+    depart_before: time | None = None,
 ) -> DirectJourneySearchResult:
-    """Return complete direct services filtered at or after an optional departure time.
+    """Return direct services filtered by optional departure bounds and an earlier-page cursor.
 
     The active provider owns its upstream date interpretation. Gadiruta limits requests to today's
     date through the end of the current Europe/Madrid calendar year because CTAN exposes no
-    reliable year parameter and misclassifies observed holidays.
+    reliable year parameter and misclassifies observed holidays. A ``depart_before`` cursor returns
+    only the preceding page, ordered chronologically, while the unbounded response stays complete
+    for the existing later-results UI.
     """
     _validate_journey_date(journey_date)
     provider = get_direct_journey_provider()
@@ -60,16 +67,39 @@ def search_direct_journeys(
             fetched_at=timezone.now(),
         )
         cache.set(cache_key, catalog, timeout=CACHE_TTL_SECONDS)
-    journeys = tuple(
-        journey
-        for journey in catalog.journeys
-        if depart_after is None or journey.departure_time >= depart_after
+    all_journeys = tuple(
+        sorted(
+            catalog.journeys,
+            key=lambda journey: (
+                journey.departure_time,
+                journey.arrival_time,
+                journey.line_code,
+                journey.note or "",
+            ),
+        )
     )
+    filtered_journeys = tuple(
+        journey
+        for journey in all_journeys
+        if (depart_after is None or journey.departure_time >= depart_after)
+        and (depart_before is None or journey.departure_time < depart_before)
+    )
+    if depart_before is None:
+        journeys = filtered_journeys
+        has_earlier_departures = bool(
+            journeys
+            and any(journey.departure_time < journeys[0].departure_time for journey in all_journeys)
+        )
+    else:
+        journeys = filtered_journeys[-EARLIER_DEPARTURE_PAGE_SIZE:]
+        has_earlier_departures = len(filtered_journeys) > len(journeys)
     return DirectJourneySearchResult(
         origin=public_origin,
         destination=public_destination,
         date=journey_date,
         depart_after=depart_after,
+        depart_before=depart_before,
+        has_earlier_departures=has_earlier_departures,
         catalog=DirectJourneyCatalog(journeys=journeys, fetched_at=catalog.fetched_at),
     )
 

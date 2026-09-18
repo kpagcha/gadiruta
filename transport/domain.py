@@ -74,10 +74,12 @@ class DirectJourneyCatalog:
 
 @dataclass(frozen=True)
 class DirectJourneySearchResult:
-    """A public-place journey search result with its selected date and optional time filter."""
+    """A public-place journey search result with optional time cursor metadata."""
 
     origin: Place
     destination: Place
     date: date
     depart_after: time | None
+    depart_before: time | None
+    has_earlier_departures: bool
     catalog: DirectJourneyCatalog

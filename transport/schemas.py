@@ -57,6 +57,12 @@ class DirectJourneysResponse(Schema):
     destination: PlaceResponse
     date: date
     depart_after: time | None
+    depart_before: time | None
+    has_earlier_departures: bool = Field(
+        description=(
+            "Whether another direct-service page exists before this response's first departure."
+        )
+    )
     fetched_at: datetime
     warnings: list[Literal["calendar_accuracy_not_guaranteed"]]
     items: list[DirectJourneyResponse]

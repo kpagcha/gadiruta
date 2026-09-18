@@ -85,10 +85,10 @@ def test_service_filters_a_cached_complete_timetable(
     """Filter after cache retrieval so distinct time choices reuse one complete upstream result."""
     origin, destination = selected_places
     first = service.search_direct_journeys(
-        origin.slug, destination.slug, timezone.localdate(), time(9, 30)
+        origin.slug, destination.slug, timezone.localdate(), time(9, 30), None
     )
     second = service.search_direct_journeys(
-        origin.slug, destination.slug, timezone.localdate(), None
+        origin.slug, destination.slug, timezone.localdate(), None, None
     )
 
     assert [journey.line_code for journey in first.catalog.journeys] == ["M-2"]
@@ -96,6 +96,35 @@ def test_service_filters_a_cached_complete_timetable(
     assert len(direct_provider.calls) == 1
     assert direct_provider.calls[0][0].external_id == "1"
     assert direct_provider.calls[0][1].external_id == "23"
+
+
+def test_service_returns_chronological_pages_before_a_departure_cursor(
+    direct_provider: StubDirectJourneyProvider,
+    selected_places: tuple[CanonicalPlace, CanonicalPlace],
+) -> None:
+    """Return the immediately preceding services while retaining the cached selected-day table."""
+    origin, destination = selected_places
+    direct_provider.journeys = tuple(
+        DirectJourney(f"M-{hour}", time(hour, 0), time(hour, 20), 20, None) for hour in range(6, 12)
+    )
+
+    first_page = service.search_direct_journeys(
+        origin.slug, destination.slug, timezone.localdate(), None, time(11, 0)
+    )
+    second_page = service.search_direct_journeys(
+        origin.slug, destination.slug, timezone.localdate(), None, time(7, 0)
+    )
+
+    assert [journey.departure_time for journey in first_page.catalog.journeys] == [
+        time(7, 0),
+        time(8, 0),
+        time(9, 0),
+        time(10, 0),
+    ]
+    assert first_page.has_earlier_departures is True
+    assert [journey.departure_time for journey in second_page.catalog.journeys] == [time(6, 0)]
+    assert second_page.has_earlier_departures is False
+    assert len(direct_provider.calls) == 1
 
 
 def test_api_returns_normalized_services_and_the_calendar_warning(
@@ -133,6 +162,8 @@ def test_api_returns_normalized_services_and_the_calendar_warning(
         },
         "date": timezone.localdate().isoformat(),
         "depart_after": "09:30:00",
+        "depart_before": None,
+        "has_earlier_departures": True,
         "fetched_at": response.json()["fetched_at"],
         "warnings": ["calendar_accuracy_not_guaranteed"],
         "items": [
@@ -146,6 +177,40 @@ def test_api_returns_normalized_services_and_the_calendar_warning(
             }
         ],
     }
+
+
+def test_api_returns_the_previous_chronological_departure_page(
+    client: Client,
+    direct_provider: StubDirectJourneyProvider,
+    selected_places: tuple[CanonicalPlace, CanonicalPlace],
+) -> None:
+    """Expose the preceding fixed-size page and its cursor metadata through the public API."""
+    origin, destination = selected_places
+    direct_provider.journeys = tuple(
+        DirectJourney(f"M-{hour}", time(hour, 0), time(hour, 20), 20, None) for hour in range(6, 12)
+    )
+
+    response = client.get(
+        "/api/v1/journeys/direct",
+        {
+            "origin": origin.slug,
+            "destination": destination.slug,
+            "date": timezone.localdate().isoformat(),
+            "depart_before": "11:00",
+        },
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["depart_after"] is None
+    assert payload["depart_before"] == "11:00:00"
+    assert payload["has_earlier_departures"] is True
+    assert [item["departure_time"] for item in payload["items"]] == [
+        "07:00:00",
+        "08:00:00",
+        "09:00:00",
+        "10:00:00",
+    ]
 
 
 @pytest.mark.parametrize(
@@ -222,4 +287,5 @@ def test_api_documents_the_direct_journey_contract(client: Client) -> None:
         "destination",
         "date",
         "depart_after",
+        "depart_before",
     }

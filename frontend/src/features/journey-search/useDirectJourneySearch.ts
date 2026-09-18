@@ -14,7 +14,10 @@ export function hasDirectJourneyParameters(
     parameters.from !== parameters.to &&
     /^\d{4}-\d{2}-\d{2}$/.test(parameters.date) &&
     (parameters.departAfter === null ||
-      /^(?:[01][0-9]|2[0-3]):[0-5][0-9]$/.test(parameters.departAfter))
+      /^(?:[01][0-9]|2[0-3]):[0-5][0-9]$/.test(parameters.departAfter)) &&
+    (parameters.departBefore === undefined ||
+      parameters.departBefore === null ||
+      /^(?:[01][0-9]|2[0-3]):[0-5][0-9]$/.test(parameters.departBefore))
   );
 }
 
@@ -28,6 +31,7 @@ export function useDirectJourneySearch(parameters: DirectJourneySearchParameters
       parameters?.to,
       parameters?.date,
       parameters?.departAfter,
+      parameters?.departBefore,
     ],
     queryFn: ({ signal }) => {
       if (!enabled) throw new Error('Direct journey search needs complete parameters.');

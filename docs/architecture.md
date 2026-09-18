@@ -140,8 +140,10 @@ extracts only usable rows, and normalizes line code, times, duration, and source
 Place services map catalogue records to canonical database identities, cache the public catalogue,
 and perform local accent-insensitive matching and ranking. Direct-journey services reverse the
 active direct provider's canonical crosswalks, cache an unfiltered complete result for an hour, and
-apply any departure-time filter afterward. The API explicitly selects public fields and does not
-interpret provider identity.
+apply departure-time filters afterward. `depart_before` is an application-level cursor: it selects
+the immediately preceding four services from that same selected-day catalogue, in chronological
+order, and reports whether an earlier page remains. The API explicitly selects public fields and
+does not interpret provider identity.
 
 ---
 

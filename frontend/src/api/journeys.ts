@@ -21,6 +21,8 @@ export interface DirectJourneysResponse {
   destination: Place;
   date: string;
   depart_after: string | null;
+  depart_before: string | null;
+  has_earlier_departures: boolean;
   fetched_at: string;
   warnings: Array<'calendar_accuracy_not_guaranteed'>;
   items: DirectJourney[];
@@ -43,6 +45,7 @@ export interface DirectJourneySearchParameters {
   to: string;
   date: string;
   departAfter: string | null;
+  departBefore?: string | null;
 }
 
 /** Narrow an untrusted JSON value to a non-null object. */
@@ -107,6 +110,8 @@ function isDirectJourneysResponse(value: unknown): value is DirectJourneysRespon
     typeof value.date === 'string' &&
     /^\d{4}-\d{2}-\d{2}$/.test(value.date) &&
     (value.depart_after === null || isTime(value.depart_after)) &&
+    (value.depart_before === null || isTime(value.depart_before)) &&
+    typeof value.has_earlier_departures === 'boolean' &&
     typeof value.fetched_at === 'string' &&
     Number.isFinite(Date.parse(value.fetched_at)) &&
     Array.isArray(value.warnings) &&
@@ -137,6 +142,7 @@ export async function fetchDirectJourneys(
     date: parameters.date,
   });
   if (parameters.departAfter) query.set('depart_after', parameters.departAfter);
+  if (parameters.departBefore) query.set('depart_before', parameters.departBefore);
 
   const response = await fetch(`/api/v1/journeys/direct?${query}`, {
     headers: { Accept: 'application/json' },

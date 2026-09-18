@@ -1,9 +1,15 @@
 /** Present loading, error, empty, and paginated direct-service search results. */
 
+import { useMutation } from '@tanstack/react-query';
 import { useState } from 'react';
 import type { RefObject } from 'react';
 import { useTranslation } from 'react-i18next';
-import { DirectJourneyRequestError, type DirectJourneysResponse } from '../../api/journeys';
+import {
+  DirectJourneyRequestError,
+  fetchDirectJourneys,
+  type DirectJourney,
+  type DirectJourneysResponse,
+} from '../../api/journeys';
 import { Button } from '../../components/Button';
 import { Panel } from '../../components/Panel';
 import { Skeleton } from '../../components/Skeleton';
@@ -15,6 +21,49 @@ const VISIBLE_JOURNEY_COUNT = 4;
 interface JourneyResultPage {
   fetchedAt: string;
   page: number;
+}
+
+/** Keep earlier cursor pages separate from the complete initial result. */
+interface EarlierJourneyPages {
+  resultKey: string;
+  items: DirectJourney[];
+  hasEarlierDepartures: boolean;
+}
+
+/** Identify a response independently of cache timestamps so prior-page state cannot cross searches. */
+function journeyResultKey(data: DirectJourneysResponse): string {
+  return [
+    data.origin.slug,
+    data.destination.slug,
+    data.date,
+    data.depart_after ?? '',
+    data.fetched_at,
+  ].join('|');
+}
+
+/** Identify one displayed service when merging earlier cursor pages without duplicate cards. */
+function journeyKey(journey: DirectJourney): string {
+  return [
+    journey.line_code,
+    journey.departure_time,
+    journey.arrival_time,
+    journey.duration_minutes,
+    journey.note ?? '',
+    journey.transport_mode,
+  ].join('|');
+}
+
+/** Merge service pages into one chronological, duplicate-free list for visual presentation. */
+function mergeJourneys(...pages: DirectJourney[][]): DirectJourney[] {
+  const journeys = new Map<string, DirectJourney>();
+  for (const journey of pages.flat()) journeys.set(journeyKey(journey), journey);
+  return [...journeys.values()].sort((first, second) =>
+    [first.departure_time, first.arrival_time, first.line_code, first.note ?? '']
+      .join('|')
+      .localeCompare(
+        [second.departure_time, second.arrival_time, second.line_code, second.note ?? ''].join('|'),
+      ),
+  );
 }
 
 /** Inputs the page supplies to render and interact with direct-service results. */
@@ -36,13 +85,39 @@ export function DirectJourneyResults({
 }: DirectJourneyResultsProps) {
   const { t } = useTranslation();
   const [journeyResultPage, setJourneyResultPage] = useState<JourneyResultPage | null>(null);
+  const [earlierJourneyPages, setEarlierJourneyPages] = useState<EarlierJourneyPages | null>(null);
+  const [earlierErrorKey, setEarlierErrorKey] = useState<string | null>(null);
   const currentJourneyPage =
     journeyResultPage !== null && journeyResultPage.fetchedAt === data?.fetched_at
       ? journeyResultPage.page
       : 1;
-  const visibleJourneys = data
+  const resultKey = data ? journeyResultKey(data) : null;
+  const currentJourneys = data
     ? data.items.slice(0, currentJourneyPage * VISIBLE_JOURNEY_COUNT)
     : [];
+  const earlierJourneys =
+    earlierJourneyPages?.resultKey === resultKey ? earlierJourneyPages.items : [];
+  const visibleJourneys = mergeJourneys(earlierJourneys, currentJourneys);
+  const hasEarlierDepartures = data
+    ? earlierJourneyPages?.resultKey === resultKey
+      ? earlierJourneyPages.hasEarlierDepartures
+      : data.has_earlier_departures
+    : false;
+  const earlierSearch = useMutation({
+    mutationFn: (departBefore: string) => {
+      if (!data) return Promise.reject(new Error('Direct journey result is unavailable.'));
+      return fetchDirectJourneys(
+        {
+          from: data.origin.slug,
+          to: data.destination.slug,
+          date: data.date,
+          departAfter: null,
+          departBefore,
+        },
+        new AbortController().signal,
+      );
+    },
+  });
 
   /** Translate a direct-search failure without exposing untrusted backend messages. */
   function directSearchError(): string {
@@ -50,6 +125,28 @@ export function DirectJourneyResults({
     if (error.code === 'journey_place_not_found') return t('journey.resultPlacesChanged');
     if (error.code === 'journey_date_unavailable') return t('journey.resultDateUnavailable');
     return t('journey.resultsUnavailable');
+  }
+
+  /** Retrieve the preceding service page using the earliest currently displayed departure as cursor. */
+  async function loadEarlierJourneys(): Promise<void> {
+    const firstJourney = visibleJourneys[0];
+    if (!data || !resultKey || !firstJourney) return;
+    try {
+      const earlierResult = await earlierSearch.mutateAsync(
+        firstJourney.departure_time.slice(0, 5),
+      );
+      setEarlierJourneyPages((current) => ({
+        resultKey,
+        items: mergeJourneys(
+          current?.resultKey === resultKey ? current.items : [],
+          earlierResult.items,
+        ),
+        hasEarlierDepartures: earlierResult.has_earlier_departures,
+      }));
+      setEarlierErrorKey(null);
+    } catch {
+      setEarlierErrorKey(resultKey);
+    }
   }
 
   return (
@@ -94,6 +191,24 @@ export function DirectJourneyResults({
         </div>
       ) : data?.items.length ? (
         <>
+          {hasEarlierDepartures && (
+            <div className="mt-4">
+              <Button
+                variant="text"
+                disabled={earlierSearch.isPending}
+                onClick={() => void loadEarlierJourneys()}
+              >
+                {earlierSearch.isPending
+                  ? t('journey.earlierDeparturesLoading')
+                  : t('journey.earlierDepartures')}
+              </Button>
+              {earlierErrorKey === resultKey && (
+                <p className="mt-1 text-sm text-muted" role="status">
+                  {t('journey.earlierDeparturesUnavailable')}
+                </p>
+              )}
+            </div>
+          )}
           <ol className="mt-4 grid list-none gap-3 p-0">
             {visibleJourneys.map((journey, index) => (
               <li

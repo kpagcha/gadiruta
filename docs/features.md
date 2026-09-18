@@ -39,7 +39,9 @@ Status: Initial direct journey search implemented
 - [x] Direct service lookup through the active direct-journey provider.
 - [x] Transport-mode icons in direct-service cards, with a neutral fallback for missing provider data.
 - [x] Journey result cards with line code, departure, arrival, duration, and source note when present;
-  initially show four services and reveal the next four with each “Show more” action.
+  initially show four services and reveal the next four with each “Show more” action. When a
+  departure-time search has earlier services, earlier cursor pages can be prepended without loading
+  the whole selected-day timetable again.
 - [x] Loading state with a direct-service skeleton card and submit-button spinner.
 - [x] Cautious empty state.
 - [x] Retryable error state.

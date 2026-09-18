@@ -79,6 +79,10 @@ def direct_journeys(
     destination: str = Query(..., min_length=1, max_length=255),
     journey_date: date = Query(alias="date"),  # noqa: B008
     depart_after: time | None = Query(None),  # noqa: B008
+    depart_before: time | None = Query(  # noqa: B008
+        None,
+        description="Return the preceding page of services before this departure-time cursor.",
+    ),
 ) -> (
     DirectJourneysResponse
     | Status[JourneyPlaceNotFoundResponse]
@@ -90,10 +94,13 @@ def direct_journeys(
     `origin` and `destination` must be stable Gadiruta place slugs returned by place search.
     Gadiruta does not calculate transfers. CTAN has no reliable year parameter and has returned
     working-day schedules for observed holidays, so dates are limited to the current local year
-    and every response warns that calendar accuracy is not guaranteed.
+    and every response warns that calendar accuracy is not guaranteed. `depart_before` returns at
+    most four chronologically ordered services immediately before its exclusive time cursor.
     """
     try:
-        result = search_direct_journeys(origin, destination, journey_date, depart_after)
+        result = search_direct_journeys(
+            origin, destination, journey_date, depart_after, depart_before
+        )
     except ValueError:
         return Status(
             422,
@@ -137,6 +144,8 @@ def direct_journeys(
         ),
         date=result.date,
         depart_after=result.depart_after,
+        depart_before=result.depart_before,
+        has_earlier_departures=result.has_earlier_departures,
         fetched_at=result.catalog.fetched_at,
         warnings=["calendar_accuracy_not_guaranteed"],
         items=[
