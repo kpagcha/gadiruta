@@ -65,8 +65,11 @@ export function JourneyDateTimePicker({
   const { t, i18n } = useTranslation();
   const dialogId = useId();
   const pickerRef = useRef<HTMLDivElement>(null);
+  const popoverRef = useRef<HTMLDivElement>(null);
   const [isOpen, setIsOpen] = useState(false);
   const [visibleMonth, setVisibleMonth] = useState(monthKey(date));
+  const [draftDate, setDraftDate] = useState(date);
+  const [draftDepartAfter, setDraftDepartAfter] = useState(departAfter);
   const hasCustomSelection = date !== today || Boolean(departAfter);
   const minimumMonth = monthKey(today);
   const maximumMonth = monthKey(maximumDate);
@@ -110,23 +113,60 @@ export function JourneyDateTimePicker({
     };
   }, [isOpen]);
 
+  useEffect(() => {
+    if (!isOpen) return undefined;
+    const animationFrame = window.requestAnimationFrame(() => {
+      const popover = popoverRef.current;
+      if (!popover) return;
+      const viewportPadding = 16;
+      const { top, bottom } = popover.getBoundingClientRect();
+      const scrollAmount =
+        bottom > window.innerHeight - viewportPadding
+          ? bottom - (window.innerHeight - viewportPadding)
+          : top < viewportPadding
+            ? top - viewportPadding
+            : 0;
+
+      if (scrollAmount === 0) return;
+      window.scrollBy({
+        top: scrollAmount,
+        behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
+      });
+    });
+
+    return () => window.cancelAnimationFrame(animationFrame);
+  }, [isOpen]);
+
   /** Restore the default "Now" state after a user has chosen a date or optional time. */
   function resetDateTime(): void {
     onDateChange(today);
     onDepartAfterChange('');
+    setDraftDate(today);
+    setDraftDepartAfter('');
     setIsOpen(false);
   }
 
-  /** Commit a date within CTAN's supported bounds while keeping any optional time filter. */
+  /** Select a draft date within CTAN's supported bounds while keeping any optional time filter. */
   function selectDate(nextDate: string): void {
     if (nextDate < today || nextDate > maximumDate) return;
-    onDateChange(nextDate);
+    setDraftDate(nextDate);
   }
 
-  /** Open the picker at its selected month, or close it without changing the current selection. */
+  /** Open the picker with the current selection as a draft, or discard a draft by closing it. */
   function togglePicker(): void {
-    if (!isOpen) setVisibleMonth(monthKey(date));
+    if (!isOpen) {
+      setVisibleMonth(monthKey(date));
+      setDraftDate(date);
+      setDraftDepartAfter(departAfter);
+    }
     setIsOpen((open) => !open);
+  }
+
+  /** Apply the chosen date and optional time together, then close the picker explicitly. */
+  function confirmDateTime(): void {
+    onDateChange(draftDate);
+    onDepartAfterChange(draftDepartAfter);
+    setIsOpen(false);
   }
 
   return (
@@ -160,6 +200,7 @@ export function JourneyDateTimePicker({
       {isOpen && (
         <div
           id={dialogId}
+          ref={popoverRef}
           className="absolute top-[calc(100%+8px)] left-0 z-20 w-[min(20rem,calc(100vw-3rem))] rounded-2xl border border-line-popover bg-surface-card p-4 shadow-(--shadow-popover)"
           role="dialog"
           aria-label={t('journey.dateTimePicker')}
@@ -203,7 +244,7 @@ export function JourneyDateTimePicker({
                   type="button"
                   role="gridcell"
                   className={`grid size-9 place-items-center rounded-full text-[13px] font-[650] transition-colors hover:bg-surface-hover disabled:cursor-default disabled:opacity-30 ${
-                    calendarDate === date
+                    calendarDate === draftDate
                       ? 'bg-accent text-on-accent hover:bg-accent'
                       : calendarDate === today
                         ? 'border border-accent text-accent'
@@ -216,7 +257,7 @@ export function JourneyDateTimePicker({
                     year: 'numeric',
                     timeZone: 'UTC',
                   }).format(parseCalendarDate(calendarDate))}
-                  aria-selected={calendarDate === date}
+                  aria-selected={calendarDate === draftDate}
                   disabled={calendarDate < today || calendarDate > maximumDate}
                   onClick={() => selectDate(calendarDate)}
                 >
@@ -236,10 +277,17 @@ export function JourneyDateTimePicker({
               id={`${dialogId}-time`}
               className="min-h-11 rounded-xl border border-line-input bg-surface-input px-3 text-sm font-normal outline-none focus:border-accent"
               type="time"
-              value={departAfter}
-              onChange={(event) => onDepartAfterChange(event.target.value)}
+              value={draftDepartAfter}
+              onChange={(event) => setDraftDepartAfter(event.target.value)}
             />
           </label>
+          <button
+            type="button"
+            className="mt-4 flex min-h-11 w-full items-center justify-center rounded-xl bg-accent px-4 text-sm font-[700] text-on-accent transition-opacity hover:opacity-90"
+            onClick={confirmDateTime}
+          >
+            {t('journey.confirmDateTime')}
+          </button>
         </div>
       )}
     </div>

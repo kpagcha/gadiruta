@@ -65,6 +65,31 @@ function isScheduleApproximate(date: string, today: string): boolean {
   );
 }
 
+/** Render lightweight shadcn-style placeholders while a direct timetable is being retrieved. */
+function DirectJourneyResultsSkeleton() {
+  return (
+    <div className="mt-4 grid gap-3" aria-hidden="true">
+      <span className="h-4 w-35 animate-pulse rounded-md bg-surface-active motion-reduce:animate-none" />
+      {[0, 1, 2].map((index) => (
+        <div
+          key={index}
+          className="grid min-h-30 gap-4 rounded-xl border border-line-subtle bg-surface-input px-4 py-4"
+        >
+          <div className="flex items-center justify-between gap-4">
+            <span className="h-6 w-16 animate-pulse rounded-md bg-surface-active motion-reduce:animate-none" />
+            <span className="h-3 w-15 animate-pulse rounded-md bg-surface-active motion-reduce:animate-none" />
+          </div>
+          <div className="flex items-center gap-3">
+            <span className="h-8 w-14 animate-pulse rounded-md bg-surface-active motion-reduce:animate-none" />
+            <span className="size-5 animate-pulse rounded-full bg-surface-active motion-reduce:animate-none" />
+            <span className="h-8 w-14 animate-pulse rounded-md bg-surface-active motion-reduce:animate-none" />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 /** Render the home search form and direct-service results. */
 export function HomePage() {
   const { t } = useTranslation();
@@ -80,6 +105,8 @@ export function HomePage() {
   const [expandedSearchKey, setExpandedSearchKey] = useState<string | null>(null);
   const [journeyResultPage, setJourneyResultPage] = useState<JourneyResultPage | null>(null);
   const hydratedSearchRef = useRef<string | null>(null);
+  const resultsPanelRef = useRef<HTMLElement>(null);
+  const shouldScrollToResultsRef = useRef(false);
   const maximumDate = today.slice(0, 4) + '-12-31';
   const samePlace = origin.place !== null && origin.place.id === destination.place?.id;
   const canSubmit = origin.place !== null && destination.place !== null && !samePlace;
@@ -126,6 +153,24 @@ export function HomePage() {
     );
     hydratedSearchRef.current = searchKey;
   }, [directSearch.data, submittedParameters]);
+
+  useEffect(() => {
+    if (!isSearching || !shouldScrollToResultsRef.current) return undefined;
+    const animationFrame = window.requestAnimationFrame(() => {
+      shouldScrollToResultsRef.current = false;
+      const resultsPanel = resultsPanelRef.current;
+      if (!resultsPanel) return;
+      const viewportPadding = 16;
+      const { top } = resultsPanel.getBoundingClientRect();
+      if (top >= viewportPadding && top <= window.innerHeight - viewportPadding) return;
+      resultsPanel.scrollIntoView({
+        block: 'start',
+        behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
+      });
+    });
+
+    return () => window.cancelAnimationFrame(animationFrame);
+  }, [isSearching]);
 
   /** Exchange complete field values, including partially typed input, in one React update. */
   function swapPlaces(): void {
@@ -177,6 +222,7 @@ export function HomePage() {
   /** Allow the button to refresh the current search in addition to submitting a changed route. */
   function submitJourney(event: FormEvent<HTMLFormElement>): void {
     event.preventDefault();
+    shouldScrollToResultsRef.current = true;
     searchJourneys(origin, destination);
   }
 
@@ -279,17 +325,17 @@ export function HomePage() {
               onChange={updateOrigin}
               endpoint="origin"
             />
-            <div className="flex min-h-[79px] items-start justify-end gap-3 pt-8">
-              <span className="h-px flex-1 bg-line-subtle" aria-hidden="true" />
+            <div className="flex min-h-16 items-center justify-end gap-3">
+              <span className="h-px flex-1 translate-y-3.5 bg-line-subtle" aria-hidden="true" />
               <button
                 type="button"
-                className="grid size-11 place-items-center rounded-full border border-line bg-paper text-accent transition-colors hover:enabled:border-line-hover hover:enabled:bg-surface-hover-strong disabled:opacity-45"
+                className="grid size-11 translate-y-3.5 place-items-center rounded-full border border-line bg-paper text-accent transition-colors hover:enabled:border-line-hover hover:enabled:bg-surface-hover-strong disabled:opacity-45"
                 aria-label={t('journey.swap')}
                 title={t('journey.swap')}
                 disabled={!origin.text && !destination.text}
                 onClick={swapPlaces}
               >
-                <Icon name="swap" />
+                <Icon name="swap" size={20} />
               </button>
             </div>
             <PlaceAutocomplete
@@ -317,34 +363,36 @@ export function HomePage() {
               )}
             </div>
 
-            <div
-              className="mt-5 min-h-15.25 border-t border-line pt-4.75"
-              aria-live="polite"
-              aria-atomic="true"
-            >
-              {samePlace ? (
+            {samePlace ? (
+              <div
+                className="mt-5 border-t border-line pt-4.75"
+                aria-live="polite"
+                aria-atomic="true"
+              >
                 <p className="text-[13px] leading-normal text-warning">{t('journey.samePlace')}</p>
-              ) : origin.place && destination.place ? (
-                <>
-                  <p className="mb-2 text-[11px] tracking-[1px] text-muted uppercase">
-                    {t('journey.selectionTitle')}
-                  </p>
-                  <p
-                    className="flex flex-wrap items-center gap-2.25 text-base font-semibold wrap-anywhere"
-                    aria-label={t('journey.selectionSummary', {
-                      origin: origin.place.name,
-                      destination: destination.place.name,
-                    })}
-                  >
-                    <span className="max-w-full">{origin.place.name}</span>
-                    <Icon name="arrow" className="size-5 shrink-0 text-icon-muted" />
-                    <span className="max-w-full">{destination.place.name}</span>
-                  </p>
-                </>
-              ) : (
-                <p className="text-xs leading-normal text-muted">{t('journey.selectionHint')}</p>
-              )}
-            </div>
+              </div>
+            ) : origin.place && destination.place ? (
+              <div
+                className="mt-5 border-t border-line pt-4.75"
+                aria-live="polite"
+                aria-atomic="true"
+              >
+                <p className="mb-2 text-[11px] tracking-[1px] text-muted uppercase">
+                  {t('journey.selectionTitle')}
+                </p>
+                <p
+                  className="flex flex-wrap items-center gap-2.25 text-base font-semibold wrap-anywhere"
+                  aria-label={t('journey.selectionSummary', {
+                    origin: origin.place.name,
+                    destination: destination.place.name,
+                  })}
+                >
+                  <span className="max-w-full">{origin.place.name}</span>
+                  <Icon name="arrow" className="size-5 shrink-0 text-icon-muted" />
+                  <span className="max-w-full">{destination.place.name}</span>
+                </p>
+              </div>
+            ) : null}
             <button
               type="submit"
               disabled={!canSubmit || isSearching}
@@ -366,16 +414,18 @@ export function HomePage() {
         </p>
       </section>
 
-      {hasSubmittedSearch && !isSearching && (directSearch.isError || directSearch.data) && (
+      {hasSubmittedSearch && (isSearching || directSearch.isError || directSearch.data) && (
         <section
+          ref={resultsPanelRef}
           className="journey-panel-enter rounded-3xl border border-line bg-surface-card p-6 shadow-(--shadow-card) max-[380px]:p-4.5 min-[850px]:p-8"
           aria-labelledby="journey-results-title"
+          aria-busy={isSearching}
         >
           <div>
             <h2 id="journey-results-title" className="text-[21px] font-[650] tracking-[-0.5px]">
               {t('journey.resultsTitle')}
             </h2>
-            {directSearch.data && (
+            {!isSearching && directSearch.data && (
               <p className="mt-1 text-sm text-muted">
                 {t('journey.resultsRoute', {
                   origin: directSearch.data.origin.name,
@@ -385,7 +435,14 @@ export function HomePage() {
             )}
           </div>
 
-          {directSearch.isError ? (
+          {isSearching ? (
+            <>
+              <DirectJourneyResultsSkeleton />
+              <p className="sr-only" role="status">
+                {t('journey.resultsLoading')}
+              </p>
+            </>
+          ) : directSearch.isError ? (
             <div className="mt-5 rounded-xl bg-paper px-4 py-4 text-sm leading-normal text-muted">
               <p>{directSearchError()}</p>
               <button

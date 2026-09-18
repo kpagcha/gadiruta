@@ -197,14 +197,15 @@ text separate from a confirmed public place identity. TanStack Query shares sugg
 between fields, debounces requests by 250 ms, and cancels obsolete requests. Suggestions have a
 five-minute freshness window and a ten-minute inactive lifetime; failed requests are not automatically
 retried, and the error state offers a retry control.
-The homepage uses a calendar popover with an optional departure-time input and a resettable “Now”
-chip. It writes `from`, `to`, `date`, and optional `depart_after` to the URL only on a valid submit.
+The homepage uses a calendar popover with an optional departure-time input, explicit confirmation,
+and a resettable “Now” chip. It writes `from`, `to`, `date`, and optional `depart_after` to the URL
+only on a valid submit.
 `from` and `to` are readable persistent place slugs, not opaque UUIDs. A reload of that URL queries
 direct services and derives the selected labels from the normalized response. Loading stays in the
-submit button while the result card is hidden. A successful desktop search puts the editable search
-card in the left column and the service list in the right; on mobile the search card collapses to an
-actionable route summary. The API clients validate response shape and impose a 25-second request
-timeout.
+submit button and a shadcn-style skeleton result card. A successful desktop search puts the editable
+search card in the left column and the service list in the right; on mobile the search card collapses
+to an actionable route summary. The API clients validate response shape and impose a 25-second
+request timeout.
 
 Browser requests use relative `/api/v1/` URLs. Vite proxies `/api/` to Django on port 8000 during
 development and local build preview, so no cross-origin API configuration is needed. Production
