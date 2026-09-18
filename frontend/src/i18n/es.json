@@ -23,8 +23,7 @@
     "footnote": "Lugares de aquí. Un comienzo sencillo."
   },
   "journey": {
-    "title": "Elige tus lugares",
-    "description": "Empieza por una ciudad o núcleo de población.",
+    "searchForm": "Búsqueda de trayecto",
     "origin": "Origen",
     "destination": "Destino",
     "originPlaceholder": "¿De dónde sales?",

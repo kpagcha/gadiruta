@@ -242,7 +242,7 @@ export function HomePage() {
         </div>
       )}
 
-      <section className={searchPanelClass} aria-labelledby="journey-title">
+      <section className={searchPanelClass} aria-label={t('journey.searchForm')}>
         {showCompactSearch && origin.place && destination.place && (
           <div className="min-[850px]:hidden">
             <button
@@ -270,12 +270,6 @@ export function HomePage() {
         )}
 
         <div className={showCompactSearch ? 'hidden min-[850px]:block' : ''}>
-          <div className="mb-7.5">
-            <h2 id="journey-title" className="text-[23px] font-[650] tracking-[-0.6px]">
-              {t('journey.title')}
-            </h2>
-            <p className="mt-2 text-sm leading-normal text-muted">{t('journey.description')}</p>
-          </div>
           <form onSubmit={submitJourney}>
             <PlaceAutocomplete
               label={t('journey.origin')}
@@ -285,7 +279,7 @@ export function HomePage() {
               onChange={updateOrigin}
               endpoint="origin"
             />
-            <div className="flex min-h-13.25 items-center justify-end gap-3">
+            <div className="flex min-h-[79px] items-start justify-end gap-3 pt-8">
               <span className="h-px flex-1 bg-line-subtle" aria-hidden="true" />
               <button
                 type="button"

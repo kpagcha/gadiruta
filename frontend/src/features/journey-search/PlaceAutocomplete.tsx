@@ -175,7 +175,6 @@ export function PlaceAutocomplete({
           </span>
         )}
       </div>
-      <div className="mt-2 min-h-4.5" aria-hidden="true" />
       <span id={`${id}-instructions`} className="sr-only">
         {t('places.instructions')}
       </span>

@@ -23,8 +23,7 @@
     "footnote": "Local places. A simple start."
   },
   "journey": {
-    "title": "Choose your places",
-    "description": "Start with a city or population centre.",
+    "searchForm": "Journey search",
     "origin": "From",
     "destination": "To",
     "originPlaceholder": "Where are you starting?",
