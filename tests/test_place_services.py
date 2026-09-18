@@ -76,6 +76,7 @@ def test_api_accepts_a_provider_with_provider_scoped_metadata(
     assert items == [
         {
             "id": items[0]["id"],
+            "slug": "centro",
             "kind": "population_centre",
             "name": "Centro",
             "municipality": "Bahía",

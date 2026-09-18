@@ -1,8 +1,9 @@
 /** Typed access to Gadiruta's public places API; never contact upstream providers from the browser. */
 
-/** A selectable population centre using Gadiruta's opaque public identity. */
+/** A selectable population centre with an opaque API identity and stable URL slug. */
 export interface Place {
   id: string;
+  slug: string;
   kind: 'population_centre';
   name: string;
   municipality: string | null;
@@ -25,6 +26,8 @@ function isPlace(value: unknown): value is Place {
     isRecord(value) &&
     typeof value.id === 'string' &&
     /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(value.id) &&
+    typeof value.slug === 'string' &&
+    /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(value.slug) &&
     value.kind === 'population_centre' &&
     typeof value.name === 'string' &&
     value.name.trim().length > 0 &&

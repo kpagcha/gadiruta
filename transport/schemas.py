@@ -8,9 +8,10 @@ from ninja import Field, Schema
 
 
 class PlaceResponse(Schema):
-    """A population centre available for selection, with its municipality when known."""
+    """A population centre available for selection, with stable identity and URL slug."""
 
     id: UUID = Field(description="Stable Gadiruta place identifier; treat as opaque.")
+    slug: str = Field(description="Stable, human-readable Gadiruta place URL key.")
     kind: Literal["population_centre"] = "population_centre"
     name: str
     municipality: str | None
@@ -62,7 +63,7 @@ class JourneyInvalidResponse(Schema):
 
 
 class JourneyPlaceNotFoundResponse(Schema):
-    """Report a canonical place identifier that does not exist in Gadiruta."""
+    """Report a canonical place URL slug that does not exist in Gadiruta."""
 
     code: Literal["journey_place_not_found"] = "journey_place_not_found"
     message: str = "One or both selected places could not be found."

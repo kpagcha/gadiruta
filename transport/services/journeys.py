@@ -1,7 +1,6 @@
 """Resolve public places and retrieve cached direct journeys from the active provider."""
 
 from datetime import date, time
-from uuid import UUID
 
 from django.core.cache import cache
 from django.db import DatabaseError
@@ -33,7 +32,7 @@ class JourneyDateUnavailableError(Exception):
 
 
 def search_direct_journeys(
-    origin_id: UUID, destination_id: UUID, journey_date: date, depart_after: time | None
+    origin_slug: str, destination_slug: str, journey_date: date, depart_after: time | None
 ) -> DirectJourneySearchResult:
     """Return complete direct services filtered at or after an optional departure time.
 
@@ -41,11 +40,14 @@ def search_direct_journeys(
     date through the end of the current Europe/Madrid calendar year because CTAN exposes no
     reliable year parameter and misclassifies observed holidays.
     """
-    if origin_id == destination_id:
-        raise ValueError("Origin and destination must differ.")
     _validate_journey_date(journey_date)
     provider = get_direct_journey_provider()
-    origin, destination = _resolve_provider_places(provider.provider_key, origin_id, destination_id)
+    public_origin, public_destination = _resolve_public_places(origin_slug, destination_slug)
+    if public_origin.id == public_destination.id:
+        raise ValueError("Origin and destination must differ.")
+    origin, destination = _resolve_provider_places(
+        provider.provider_key, public_origin, public_destination
+    )
     cache_key = _cache_key(
         provider.provider_key, origin.external_id, destination.external_id, journey_date
     )
@@ -58,7 +60,6 @@ def search_direct_journeys(
             fetched_at=timezone.now(),
         )
         cache.set(cache_key, catalog, timeout=CACHE_TTL_SECONDS)
-    public_origin, public_destination = _resolve_public_places(origin_id, destination_id)
     journeys = tuple(
         journey
         for journey in catalog.journeys
@@ -81,22 +82,20 @@ def _validate_journey_date(journey_date: date) -> None:
 
 
 def _resolve_provider_places(
-    provider_key: str, origin_id: UUID, destination_id: UUID
+    provider_key: str, origin: Place, destination: Place
 ) -> tuple[ProviderPlace, ProviderPlace]:
     """Map two public places to active-provider IDs while distinguishing missing and unsupported."""
-    public_places = _resolve_public_places(origin_id, destination_id)
     try:
         references = {
             reference.place_id: reference
             for reference in ProviderPlaceReference.objects.filter(
-                provider_key=provider_key, place_id__in=(origin_id, destination_id)
+                provider_key=provider_key, place_id__in=(origin.id, destination.id)
             ).select_related("place")
         }
     except DatabaseError as error:
         raise ProviderError("Canonical place identity is temporarily unavailable.") from error
-    if origin_id not in references or destination_id not in references:
+    if origin.id not in references or destination.id not in references:
         raise JourneyPlaceUnsupportedError
-    origin, destination = public_places
     return (
         ProviderPlace(
             external_id=references[origin.id].external_id,
@@ -111,23 +110,25 @@ def _resolve_provider_places(
     )
 
 
-def _resolve_public_places(origin_id: UUID, destination_id: UUID) -> tuple[Place, Place]:
-    """Load two canonical places or distinguish a missing public UUID from provider support gaps."""
+def _resolve_public_places(origin_slug: str, destination_slug: str) -> tuple[Place, Place]:
+    """Load two canonical places by stable URL slug or distinguish missing provider support gaps."""
     try:
-        places = CanonicalPlace.objects.in_bulk((origin_id, destination_id))
+        places = CanonicalPlace.objects.in_bulk((origin_slug, destination_slug), field_name="slug")
     except DatabaseError as error:
         raise ProviderError("Canonical place identity is temporarily unavailable.") from error
-    if origin_id not in places or destination_id not in places:
+    if origin_slug not in places or destination_slug not in places:
         raise JourneyPlaceNotFoundError
     return (
-        _to_place(places[origin_id]),
-        _to_place(places[destination_id]),
+        _to_place(places[origin_slug]),
+        _to_place(places[destination_slug]),
     )
 
 
 def _to_place(place: CanonicalPlace) -> Place:
     """Expose only the canonical public fields needed by direct journey services."""
-    return Place(id=place.id, name=place.name, municipality=place.municipality)
+    if place.slug is None:
+        raise ProviderError("Canonical place identity is temporarily unavailable.")
+    return Place(id=place.id, slug=place.slug, name=place.name, municipality=place.municipality)
 
 
 def _cache_key(provider_key: str, origin_id: str, destination_id: str, journey_date: date) -> str:

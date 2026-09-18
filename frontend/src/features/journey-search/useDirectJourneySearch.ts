@@ -9,9 +9,9 @@ export function hasDirectJourneyParameters(
 ): parameters is DirectJourneySearchParameters {
   return (
     parameters !== null &&
-    /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(parameters.origin) &&
-    /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(parameters.destination) &&
-    parameters.origin !== parameters.destination &&
+    /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(parameters.from) &&
+    /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(parameters.to) &&
+    parameters.from !== parameters.to &&
     /^\d{4}-\d{2}-\d{2}$/.test(parameters.date) &&
     (parameters.departAfter === null ||
       /^(?:[01][0-9]|2[0-3]):[0-5][0-9]$/.test(parameters.departAfter))
@@ -24,8 +24,8 @@ export function useDirectJourneySearch(parameters: DirectJourneySearchParameters
   return useQuery({
     queryKey: [
       'direct-journeys',
-      parameters?.origin,
-      parameters?.destination,
+      parameters?.from,
+      parameters?.to,
       parameters?.date,
       parameters?.departAfter,
     ],

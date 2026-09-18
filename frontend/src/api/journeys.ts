@@ -35,8 +35,8 @@ export class DirectJourneyRequestError extends Error {
 
 /** Describe the URL-safe inputs Gadiruta accepts for one direct journey search. */
 export interface DirectJourneySearchParameters {
-  origin: string;
-  destination: string;
+  from: string;
+  to: string;
   date: string;
   departAfter: string | null;
 }
@@ -52,6 +52,8 @@ function isPlace(value: unknown): value is Place {
     isRecord(value) &&
     typeof value.id === 'string' &&
     /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(value.id) &&
+    typeof value.slug === 'string' &&
+    /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(value.slug) &&
     value.kind === 'population_centre' &&
     typeof value.name === 'string' &&
     value.name.trim().length > 0 &&
@@ -113,8 +115,8 @@ export async function fetchDirectJourneys(
   signal: AbortSignal,
 ): Promise<DirectJourneysResponse> {
   const query = new URLSearchParams({
-    origin: parameters.origin,
-    destination: parameters.destination,
+    origin: parameters.from,
+    destination: parameters.to,
     date: parameters.date,
   });
   if (parameters.departAfter) query.set('depart_after', parameters.departAfter);

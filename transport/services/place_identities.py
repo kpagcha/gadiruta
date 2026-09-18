@@ -1,10 +1,13 @@
 """Resolve provider-scoped places into persistent public Gadiruta identities."""
 
+from collections import Counter
+
 from django.db import DatabaseError
 
 from transport.domain import Place, ProviderPlace
 from transport.models import CanonicalPlace, ProviderPlaceReference
 from transport.providers.base import ProviderError
+from transport.services.place_slugs import allocate_place_slug, preferred_place_slug
 
 
 def reconcile_provider_places(
@@ -20,6 +23,14 @@ def reconcile_provider_places(
         raise ProviderError("The place provider returned duplicate external identifiers.")
 
     try:
+        existing_places = list(CanonicalPlace.objects.only("id", "name", "municipality", "slug"))
+        occupied_slugs = {place.slug for place in existing_places if place.slug is not None}
+        existing_names = {
+            preferred_place_slug(place.name, None, disambiguate=False) for place in existing_places
+        }
+        provider_name_counts = Counter(
+            preferred_place_slug(place.name, None, disambiguate=False) for place in provider_places
+        )
         references = {
             reference.external_id: reference
             for reference in ProviderPlaceReference.objects.select_related("place").filter(
@@ -31,10 +42,22 @@ def reconcile_provider_places(
             reference = references.get(provider_place.external_id)
             canonical_place: CanonicalPlace
             if reference is None:
+                name_slug = preferred_place_slug(provider_place.name, None, disambiguate=False)
+                preferred_slug = preferred_place_slug(
+                    provider_place.name,
+                    provider_place.municipality,
+                    disambiguate=(
+                        provider_name_counts[name_slug] > 1 or name_slug in existing_names
+                    ),
+                )
+                slug = allocate_place_slug(preferred_slug, occupied_slugs)
                 canonical_place = CanonicalPlace.objects.create(
                     name=provider_place.name,
                     municipality=provider_place.municipality,
+                    slug=slug,
                 )
+                occupied_slugs.add(slug)
+                existing_names.add(name_slug)
                 reference, created_reference = ProviderPlaceReference.objects.get_or_create(
                     provider_key=provider_key,
                     external_id=provider_place.external_id,
@@ -46,6 +69,20 @@ def reconcile_provider_places(
                 references[provider_place.external_id] = reference
             else:
                 canonical_place = reference.place
+
+            if canonical_place.slug is None:
+                name_slug = preferred_place_slug(canonical_place.name, None, disambiguate=False)
+                slug = allocate_place_slug(
+                    preferred_place_slug(
+                        canonical_place.name,
+                        canonical_place.municipality,
+                        disambiguate=provider_name_counts[name_slug] > 1,
+                    ),
+                    occupied_slugs,
+                )
+                canonical_place.slug = slug
+                canonical_place.save(update_fields=("slug", "updated_at"))
+                occupied_slugs.add(slug)
 
             if (
                 canonical_place.name != provider_place.name
@@ -59,6 +96,7 @@ def reconcile_provider_places(
                     id=canonical_place.id,
                     name=canonical_place.name,
                     municipality=canonical_place.municipality,
+                    slug=canonical_place.slug,
                 )
             )
     except DatabaseError as error:

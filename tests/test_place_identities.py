@@ -20,6 +20,7 @@ def test_first_provider_reference_assigns_a_canonical_uuid() -> None:
         (ProviderPlace(external_id="1", name="Cádiz", municipality="Cádiz"),),
     )
     assert UUID(str(places[0].id)).version == 4
+    assert places[0].slug == "cadiz"
     reference = ProviderPlaceReference.objects.get(
         provider_key=CTAN_PROVIDER_KEY,
         external_id="1",
@@ -40,6 +41,7 @@ def test_existing_reference_reuses_identity_and_refreshes_labels() -> None:
     assert second.id == first.id
     assert second.name == "Cádiz centro"
     assert second.municipality is None
+    assert second.slug == "cadiz"
     assert ProviderPlaceReference.objects.count() == 1
     assert CanonicalPlace.objects.get(pk=first.id).name == "Cádiz centro"
 
@@ -73,3 +75,20 @@ def test_duplicate_provider_identifiers_are_unavailable_data() -> None:
                 ProviderPlace(external_id="one", name="Second", municipality=None),
             ),
         )
+
+
+def test_place_slug_uses_municipality_then_a_stable_numeric_suffix_for_collisions() -> None:
+    """Make duplicate names readable in URLs without exposing opaque identifiers."""
+    places = reconcile_provider_places(
+        "future",
+        (
+            ProviderPlace(external_id="one", name="Costa Ballena", municipality="Chipiona"),
+            ProviderPlace(external_id="two", name="Costa Ballena", municipality="Rota"),
+            ProviderPlace(external_id="three", name="Costa Ballena", municipality="Rota"),
+        ),
+    )
+    assert [place.slug for place in places] == [
+        "costa-ballena-chipiona",
+        "costa-ballena-rota",
+        "costa-ballena-rota-2",
+    ]

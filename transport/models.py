@@ -12,6 +12,7 @@ class CanonicalPlace(models.Model):
     kind = models.CharField(max_length=32, default="population_centre", editable=False)
     name = models.CharField(max_length=200)
     municipality = models.CharField(max_length=200, null=True, blank=True)
+    slug = models.SlugField(max_length=255, unique=True, null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

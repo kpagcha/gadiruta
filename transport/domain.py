@@ -7,11 +7,12 @@ from uuid import UUID
 
 @dataclass(frozen=True)
 class Place:
-    """A searchable population centre with an opaque public ID and normalized display labels."""
+    """A searchable population centre with stable public identity, labels, and a URL slug."""
 
     id: UUID
     name: str
     municipality: str | None
+    slug: str
 
 
 @dataclass(frozen=True)

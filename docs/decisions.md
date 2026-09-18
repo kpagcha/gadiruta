@@ -346,3 +346,31 @@ Consequences:
   search, provided explicit canonical-place crosswalks exist for that provider.
 - Requests are bounded but a cold search can make several CTAN calls. The one-hour cache avoids
   repeating a complete successful lookup for different departure-time filters.
+
+---
+
+## 2026-09-18 — Human-readable canonical place URL slugs
+
+Context:
+
+Canonical UUIDs keep provider crosswalks stable but produce unfriendly shared journey URLs. Place
+names are friendlier but cannot safely be used as an unpersisted lookup because labels can collide
+or change during provider refreshes.
+
+Decision:
+
+Persist one unique slug for each canonical place and use it in browser journey URLs. Generate a
+normalized place-name slug when the name is unique. For a collision in the same catalogue batch,
+append the municipality; if that is still occupied, append a stored numeric suffix. Do not change
+the slug when the provider refreshes display labels.
+
+The browser uses `from` and `to` slug parameters, while the direct-journey API resolves the same
+values through its existing `origin` and `destination` parameters. UUIDs remain opaque API response
+identifiers and database keys, not user-facing URL values.
+
+Consequences:
+
+- Typical links read as `/?from=cadiz&to=jerez&date=2026-09-18`.
+- Ambiguous places remain readable, for example `costa-ballena-chipiona`; only a repeated name in
+  the same municipality requires a numeric suffix.
+- A migration backfills slugs for canonical places already persisted in local databases.

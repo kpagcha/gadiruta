@@ -57,6 +57,8 @@ Notes:
 - CTAN's calendar selection can be inaccurate on public holidays, so every result displays that
   warning. Mode/operator claims are intentionally omitted because the dated rows do not supply
   reliable per-service values.
+- Shared search URLs use readable canonical place slugs (`from=cadiz&to=jerez`), resolving name
+  collisions with municipality context and then a stable numeric suffix when necessary.
 - Place suggestions support loading, empty, and retryable error states. Typing clears any previous
   selection; users must select a suggestion to confirm a place. Choosing the same origin and
   destination displays a warning.

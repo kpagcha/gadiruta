@@ -68,6 +68,7 @@ def test_search_normalizes_accents_case_and_whitespace(
     assert UUID(place["id"]).version == 4
     assert place == {
         "id": place["id"],
+        "slug": "cadiz",
         "kind": "population_centre",
         "name": "Cádiz",
         "municipality": "Cádiz",

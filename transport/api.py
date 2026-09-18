@@ -2,7 +2,6 @@
 
 import logging
 from datetime import date, time
-from uuid import UUID
 
 from django.http import HttpRequest
 from ninja import Query, Router, Status
@@ -52,7 +51,12 @@ def places(
         return Status(503, PlacesUnavailableResponse())
     return PlacesResponse(
         items=[
-            PlaceResponse(id=place.id, name=place.name, municipality=place.municipality)
+            PlaceResponse(
+                id=place.id,
+                slug=place.slug,
+                name=place.name,
+                municipality=place.municipality,
+            )
             for place in result.places
         ],
         fetched_at=result.fetched_at,
@@ -71,8 +75,8 @@ def places(
 )
 def direct_journeys(
     request: HttpRequest,
-    origin: UUID,
-    destination: UUID,
+    origin: str = Query(..., min_length=1, max_length=255),
+    destination: str = Query(..., min_length=1, max_length=255),
     journey_date: date = Query(alias="date"),  # noqa: B008
     depart_after: time | None = Query(None),  # noqa: B008
 ) -> (
@@ -83,6 +87,7 @@ def direct_journeys(
 ):
     """Find scheduled direct services for two selected population centres on one supported date.
 
+    `origin` and `destination` must be stable Gadiruta place slugs returned by place search.
     Gadiruta does not calculate transfers. CTAN has no reliable year parameter and has returned
     working-day schedules for observed holidays, so dates are limited to the current local year
     and every response warns that calendar accuracy is not guaranteed.
@@ -120,11 +125,13 @@ def direct_journeys(
     return DirectJourneysResponse(
         origin=PlaceResponse(
             id=result.origin.id,
+            slug=result.origin.slug,
             name=result.origin.name,
             municipality=result.origin.municipality,
         ),
         destination=PlaceResponse(
             id=result.destination.id,
+            slug=result.destination.slug,
             name=result.destination.name,
             municipality=result.destination.municipality,
         ),

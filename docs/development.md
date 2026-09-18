@@ -260,8 +260,8 @@ the same local Django proxy; it is not a production deployment server.
 1. Type `cadiz` into the starting-point field; select Cádiz using Down then Enter.
 2. Type `puerto` into the destination field and choose a suggestion with the pointer.
 3. Keep today's date or choose a later date in the current year, optionally set a departure time, then
-   select **Find transport**. Confirm that the URL receives the two place IDs, `date`, and optional
-   `depart_after`.
+   select **Find transport**. Confirm that the URL receives readable `from` and `to` place slugs,
+   `date`, and optional `depart_after`.
 4. Reload or open the resulting URL in a new tab. The selected place labels and result state must be restored.
 5. Swap the places, edit a selected label, and clear a field. Editing must remove its confirmed identity.
 6. Search for an unmatched name and check the autocomplete empty state; an unavailable API should show a retry.
@@ -397,10 +397,11 @@ When adding or changing an endpoint:
 - Place-search example: http://127.0.0.1:8000/api/v1/places?q=cadiz
 - Direct-journey endpoint: http://127.0.0.1:8000/api/v1/journeys/direct
 
-The place-search example contacts live CTAN on a cache miss. Direct journey lookup requires
-selected Gadiruta place UUIDs, a `date` between today and the current year's end, and an optional
-`depart_after` time. Query behavior and response fields are documented in OpenAPI. Both caches are
-process-local and reset when that process restarts.
+The place-search example contacts live CTAN on a cache miss. Direct journey lookup accepts selected
+Gadiruta place slugs as its `origin` and `destination` API parameters, a `date` between today and
+the current year's end, and an optional `depart_after` time. The browser's shareable URL presents
+those values as `from` and `to`. Query behavior and response fields are documented in OpenAPI. Both
+caches are process-local and reset when that process restarts.
 
 The `scalar-ninja` integration serves the reference page at the same URL as before. Its browser
 bundle is pinned to a versioned jsDelivr URL in `gadiruta/api.py`; the browser needs internet access

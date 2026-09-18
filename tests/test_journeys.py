@@ -3,7 +3,6 @@
 from collections.abc import Iterator
 from dataclasses import dataclass, field
 from datetime import date, time
-from uuid import uuid4
 
 import pytest
 from django.core.cache import cache
@@ -54,8 +53,12 @@ def direct_provider(monkeypatch: pytest.MonkeyPatch) -> StubDirectJourneyProvide
 @pytest.fixture
 def selected_places() -> tuple[CanonicalPlace, CanonicalPlace]:
     """Persist two canonical places with the active provider's independent external references."""
-    origin = CanonicalPlace.objects.create(name="C\u00e1diz", municipality="C\u00e1diz")
-    destination = CanonicalPlace.objects.create(name="Jerez", municipality="Jerez de la Frontera")
+    origin = CanonicalPlace.objects.create(
+        name="C\u00e1diz", municipality="C\u00e1diz", slug="cadiz"
+    )
+    destination = CanonicalPlace.objects.create(
+        name="Jerez", municipality="Jerez de la Frontera", slug="jerez"
+    )
     ProviderPlaceReference.objects.create(provider_key="stub-direct", external_id="1", place=origin)
     ProviderPlaceReference.objects.create(
         provider_key="stub-direct", external_id="23", place=destination
@@ -82,9 +85,11 @@ def test_service_filters_a_cached_complete_timetable(
     """Filter after cache retrieval so distinct time choices reuse one complete upstream result."""
     origin, destination = selected_places
     first = service.search_direct_journeys(
-        origin.id, destination.id, timezone.localdate(), time(9, 30)
+        origin.slug, destination.slug, timezone.localdate(), time(9, 30)
     )
-    second = service.search_direct_journeys(origin.id, destination.id, timezone.localdate(), None)
+    second = service.search_direct_journeys(
+        origin.slug, destination.slug, timezone.localdate(), None
+    )
 
     assert [journey.line_code for journey in first.catalog.journeys] == ["M-2"]
     assert [journey.line_code for journey in second.catalog.journeys] == ["M-1", "M-2"]
@@ -103,8 +108,8 @@ def test_api_returns_normalized_services_and_the_calendar_warning(
     response = client.get(
         "/api/v1/journeys/direct",
         {
-            "origin": str(origin.id),
-            "destination": str(destination.id),
+            "origin": origin.slug,
+            "destination": destination.slug,
             "date": timezone.localdate().isoformat(),
             "depart_after": "09:30",
         },
@@ -114,12 +119,14 @@ def test_api_returns_normalized_services_and_the_calendar_warning(
     assert response.json() == {
         "origin": {
             "id": str(origin.id),
+            "slug": origin.slug,
             "kind": "population_centre",
             "name": "C\u00e1diz",
             "municipality": "C\u00e1diz",
         },
         "destination": {
             "id": str(destination.id),
+            "slug": destination.slug,
             "kind": "population_centre",
             "name": "Jerez",
             "municipality": "Jerez de la Frontera",
@@ -160,10 +167,8 @@ def test_api_rejects_invalid_searches_before_provider_retrieval(
     """Return a typed response for matching places or dates outside CTAN's safe window."""
     origin, destination = selected_places
     request_parameters = {
-        "origin": str(origin.id) if parameters["origin"] == "same" else str(origin.id),
-        "destination": str(origin.id)
-        if parameters["destination"] == "same"
-        else str(destination.id),
+        "origin": origin.slug,
+        "destination": origin.slug if parameters["destination"] == "same" else destination.slug,
         "date": parameters.get("date", timezone.localdate().isoformat()),
     }
     response = client.get("/api/v1/journeys/direct", request_parameters)
@@ -178,13 +183,13 @@ def test_api_distinguishes_unknown_places_and_provider_unavailability(
     direct_provider: StubDirectJourneyProvider,
     selected_places: tuple[CanonicalPlace, CanonicalPlace],
 ) -> None:
-    """Keep unknown IDs separate from a retryable provider failure without leaking its details."""
+    """Keep unknown slugs separate from a retryable provider failure without leaking its details."""
     origin, destination = selected_places
     unknown = client.get(
         "/api/v1/journeys/direct",
         {
-            "origin": str(uuid4()),
-            "destination": str(destination.id),
+            "origin": "not-a-place",
+            "destination": destination.slug,
             "date": timezone.localdate().isoformat(),
         },
     )
@@ -195,8 +200,8 @@ def test_api_distinguishes_unknown_places_and_provider_unavailability(
     unavailable = client.get(
         "/api/v1/journeys/direct",
         {
-            "origin": str(origin.id),
-            "destination": str(destination.id),
+            "origin": origin.slug,
+            "destination": destination.slug,
             "date": timezone.localdate().isoformat(),
         },
     )

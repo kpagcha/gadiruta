@@ -29,12 +29,12 @@ function madridToday(): string {
 function directJourneyParameters(
   searchParameters: URLSearchParams,
 ): DirectJourneySearchParameters | null {
-  const origin = searchParameters.get('origin');
-  const destination = searchParameters.get('destination');
+  const from = searchParameters.get('from');
+  const to = searchParameters.get('to');
   const date = searchParameters.get('date');
-  if (!origin || !destination || !date) return null;
+  if (!from || !to || !date) return null;
   const departAfter = searchParameters.get('depart_after');
-  return { origin, destination, date, departAfter: departAfter || null };
+  return { from, to, date, departAfter: departAfter || null };
 }
 
 /** Present an API clock time without converting a local timetable value through the browser timezone. */
@@ -84,8 +84,8 @@ export function HomePage() {
     event.preventDefault();
     if (!displayedOrigin.place || !displayedDestination.place || samePlace) return;
     const nextParameters = new URLSearchParams({
-      origin: displayedOrigin.place.id,
-      destination: displayedDestination.place.id,
+      from: displayedOrigin.place.slug,
+      to: displayedDestination.place.slug,
       date: journeyDate,
     });
     if (departAfter) nextParameters.set('depart_after', departAfter);

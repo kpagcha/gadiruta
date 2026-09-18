@@ -197,9 +197,10 @@ text separate from a confirmed public place identity. TanStack Query shares sugg
 between fields, debounces requests by 250 ms, and cancels obsolete requests. Suggestions have a
 five-minute freshness window and a ten-minute inactive lifetime; failed requests are not automatically
 retried, and the error state offers a retry control.
-The homepage adds native date/time controls after both places and writes `origin`, `destination`,
-`date`, and optional `depart_after` to the URL only on a valid submit. A reload of that URL queries
-direct services and derives the selected labels from the normalized response. Its result card
+The homepage adds native date/time controls after both places and writes `from`, `to`, `date`, and
+optional `depart_after` to the URL only on a valid submit. `from` and `to` are readable persistent
+place slugs, not opaque UUIDs. A reload of that URL queries direct services and derives the selected
+labels from the normalized response. Its result card
 handles loading, retryable error, cautious empty, calendar-warning, and service-list states. The
 API clients validate response shape and impose a 25-second request timeout.
 
@@ -260,10 +261,13 @@ candidate discovery is a successful cached result. Provider failures are never c
 partial candidate-line response is exposed.
 
 The versioned cache key identifies Gadiruta's public catalogue rather than an upstream endpoint.
-`CanonicalPlace` holds immutable public UUIDs and current labels. `ProviderPlaceReference` maps a
-provider key plus external ID to that identity. A record without a crosswalk receives a new UUID4
-identity, whether it comes from CTAN or a future provider. Records are never matched by labels
-automatically, so deliberate crosswalks can be added later without risking false matches.
+`CanonicalPlace` holds immutable public UUIDs, current labels, and a stable human-readable URL
+slug. `ProviderPlaceReference` maps a provider key plus external ID to that identity. A record
+without a crosswalk receives a new UUID4 identity, whether it comes from CTAN or a future provider.
+Its initial slug uses the normalized place name; collisions use municipality context and then a
+stored numeric suffix. Slugs do not change during display-label refreshes. Records are never
+matched by labels automatically, so deliberate crosswalks can be added later without risking false
+matches.
 
 Potential persisted entities include:
 
