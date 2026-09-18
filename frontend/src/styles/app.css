@@ -11,6 +11,7 @@
 }
 
 @theme {
+  --breakpoint-desktop: 53.125rem;
   --font-sans: 'Manrope', 'Segoe UI', sans-serif;
   --color-paper: #f7f6f0;
   --color-ink: #193839;

@@ -163,9 +163,26 @@ Implemented organization:
 frontend/
     src/
         api/
-        components/
+        components/             # Shared shell and small UI primitives
+            AppFooter.tsx
+            AppHeader.tsx
+            Button.tsx
+            date-time-picker/
+                calendar.ts
+                DateTimePicker.tsx
+            Icon.tsx
+            Panel.tsx
+            Skeleton.tsx
         features/
             journey-search/
+                calendar.ts
+                CompactJourneySearchSummary.tsx
+                DirectJourneyResults.tsx
+                JourneyDateTimePicker.tsx
+                JourneySearchForm.tsx
+                JourneyServiceCard.tsx
+                PlaceAutocomplete.tsx
+                useScrollToResults.ts
         pages/
         i18n/
             en.json
@@ -191,6 +208,13 @@ the shared interface icon set; icons remain decorative unless their surrounding 
 Semantic theme tokens are overridden on the document's `data-theme` attribute. The first visit follows the browser's
 system preference; the header toggle persists an explicit light/dark choice in `localStorage`. A small head bootstrap
 applies the initial attribute before the React bundle loads to avoid a light-theme flash.
+
+`HomePage` coordinates URL state, provider queries, automatic submission, and responsive placement. The journey-search
+feature owns the editable form, autocomplete, compact mobile summary, and direct-service result presentation. Its thin
+date/time adapter supplies journey wording and values to a reusable, feature-neutral picker. Shared components cover
+the persistent shell plus repeated visual treatments, retaining native HTML
+elements (`button` and `section`) rather than introducing a general-purpose UI library. The shared Tailwind `desktop`
+breakpoint is the 850px layout transition used by the shell and journey search.
 
 React Router supplies the homepage and a localized not-found page. Each autocomplete keeps draft
 text separate from a confirmed public place identity. TanStack Query shares suggestion results

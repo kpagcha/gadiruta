@@ -3,6 +3,7 @@ import { useEffect, useId, useRef, useState } from 'react';
 import type { KeyboardEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { Place } from '../../api/places';
+import { Button } from '../../components/Button';
 import { Icon } from '../../components/Icon';
 import { canSearchPlaces, usePlaceSearch } from './usePlaceSearch';
 
@@ -160,15 +161,15 @@ export function PlaceAutocomplete({
             <Icon name="loader" className="size-5 animate-spin motion-reduce:animate-none" />
           </span>
         ) : value.text ? (
-          <button
-            type="button"
-            className="m-1 grid size-11 shrink-0 place-items-center rounded-full border-0 bg-transparent text-muted transition-colors hover:bg-surface-hover hover:text-ink"
+          <Button
+            variant="quietIcon"
+            className="m-1 size-11 shrink-0"
             aria-label={clearLabel}
             onPointerDown={(event) => event.preventDefault()}
             onClick={clearPlace}
           >
             <Icon name="close" size={17} />
-          </button>
+          </Button>
         ) : (
           <span className="grid size-12 shrink-0 place-items-center text-icon-muted">
             <Icon name="pin" size={19} />
