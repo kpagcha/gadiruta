@@ -35,8 +35,8 @@ Status: Initial direct journey search implemented
 - [x] Destination autocomplete.
 - [x] Swap origin/destination, including partially typed input.
 - [x] Calendar date selection, from today through the current local calendar year, with an optional
-  “depart at or after” time filter, a compact quarter-hour picker, explicit confirmation, and a
-  resettable “Now” default.
+  “depart at or after” time filter, a compact picker with 10- or 15-minute steps, explicit
+  confirmation, and a resettable “Now” default.
 - [x] Direct service lookup through the active direct-journey provider.
 - [x] Transport-mode icons in direct-service cards, with a neutral fallback for missing provider data.
 - [x] Journey result cards with line code, departure, arrival, duration, and source note when present;

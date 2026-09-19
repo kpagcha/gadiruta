@@ -18,6 +18,9 @@ export interface DateTimePickerLabels {
   time: string;
   timeHours: string;
   timeMinutes: string;
+  minuteStep: string;
+  tenMinuteSteps: string;
+  fifteenMinuteSteps: string;
   clearTime: string;
   confirm: string;
 }
@@ -259,6 +262,9 @@ export function DateTimePicker({
               labels={{
                 hours: labels.timeHours,
                 minutes: labels.timeMinutes,
+                minuteStep: labels.minuteStep,
+                tenMinuteSteps: labels.tenMinuteSteps,
+                fifteenMinuteSteps: labels.fifteenMinuteSteps,
                 clear: labels.clearTime,
               }}
             />

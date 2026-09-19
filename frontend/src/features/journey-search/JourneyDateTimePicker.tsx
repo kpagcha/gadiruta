@@ -45,6 +45,9 @@ export function JourneyDateTimePicker({
         time: t('journey.time'),
         timeHours: t('journey.timeHours'),
         timeMinutes: t('journey.timeMinutes'),
+        minuteStep: t('journey.minuteStep'),
+        tenMinuteSteps: t('journey.tenMinuteSteps'),
+        fifteenMinuteSteps: t('journey.fifteenMinuteSteps'),
         clearTime: t('journey.clearTime'),
         confirm: t('journey.confirmDateTime'),
       }}

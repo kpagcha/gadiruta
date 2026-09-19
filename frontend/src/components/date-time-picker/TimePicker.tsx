@@ -5,12 +5,17 @@ import { Button } from '../Button';
 import { Icon } from '../Icon';
 
 const HOURS = Array.from({ length: 24 }, (_, hour) => String(hour).padStart(2, '0'));
-const MINUTES = ['00', '15', '30', '45'];
+const MINUTE_STEPS = [10, 15] as const;
+
+type MinuteStep = (typeof MINUTE_STEPS)[number];
 
 /** Supply contextual accessibility labels without coupling the picker to one feature's translations. */
 export interface TimePickerLabels {
   hours: string;
   minutes: string;
+  minuteStep: string;
+  tenMinuteSteps: string;
+  fifteenMinuteSteps: string;
   clear: string;
 }
 
@@ -28,6 +33,16 @@ function splitTime(value: string): [string | null, string | null] {
   return match ? [match[1] ?? null, match[2] ?? null] : [null, null];
 }
 
+/** Return the selectable minute values for a given interval without hardcoding each column. */
+function minutesForStep(step: MinuteStep): string[] {
+  return Array.from({ length: 60 / step }, (_, index) => String(index * step).padStart(2, '0'));
+}
+
+/** Prefer the smallest supported interval that can show an already chosen minute exactly. */
+function preferredMinuteStep(minute: string | null): MinuteStep {
+  return minute !== null && Number(minute) % 15 !== 0 ? 10 : 15;
+}
+
 /** Render a small shadcn-style time popover without requiring a heavyweight time-picker dependency. */
 export function TimePicker({ value, onChange, labelledBy, labels }: TimePickerProps) {
   const dialogId = useId();
@@ -36,6 +51,10 @@ export function TimePicker({ value, onChange, labelledBy, labels }: TimePickerPr
   const selectedHourRef = useRef<HTMLButtonElement>(null);
   const [isOpen, setIsOpen] = useState(false);
   const [selectedHour, selectedMinute] = splitTime(value);
+  const [minuteStep, setMinuteStep] = useState<MinuteStep>(() =>
+    preferredMinuteStep(selectedMinute),
+  );
+  const minutes = minutesForStep(minuteStep);
 
   useEffect(() => {
     if (!isOpen) return undefined;
@@ -79,9 +98,11 @@ export function TimePicker({ value, onChange, labelledBy, labels }: TimePickerPr
     return () => window.cancelAnimationFrame(animationFrame);
   }, [isOpen]);
 
-  /** Choose an hour while preserving a chosen minute or beginning on the quarter hour. */
+  /** Choose an hour while preserving a compatible minute or beginning at the hour. */
   function chooseHour(hour: string): void {
-    onChange(`${hour}:${selectedMinute ?? '00'}`);
+    onChange(
+      `${hour}:${selectedMinute && minutes.includes(selectedMinute) ? selectedMinute : '00'}`,
+    );
   }
 
   /** Choose a minute after an hour and close the small popover once the time is complete. */
@@ -120,6 +141,27 @@ export function TimePicker({ value, onChange, labelledBy, labels }: TimePickerPr
           role="dialog"
           aria-labelledby={labelledBy}
         >
+          <div
+            className="mb-2 grid grid-cols-2 gap-1 rounded-lg bg-surface-input p-1"
+            role="group"
+            aria-label={labels.minuteStep}
+          >
+            {MINUTE_STEPS.map((step) => (
+              <button
+                key={step}
+                type="button"
+                className={`rounded-md px-2 py-1 text-xs font-[650] transition-colors ${
+                  minuteStep === step
+                    ? 'bg-surface-card text-ink shadow-sm'
+                    : 'text-muted hover:text-ink'
+                }`}
+                aria-pressed={minuteStep === step}
+                onClick={() => setMinuteStep(step)}
+              >
+                {step === 10 ? labels.tenMinuteSteps : labels.fifteenMinuteSteps}
+              </button>
+            ))}
+          </div>
           <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-1.5">
             <div
               className="grid max-h-44 gap-0.5 overflow-y-auto overscroll-contain p-0.5"
@@ -149,7 +191,7 @@ export function TimePicker({ value, onChange, labelledBy, labels }: TimePickerPr
               role="group"
               aria-label={labels.minutes}
             >
-              {MINUTES.map((minute) => (
+              {minutes.map((minute) => (
                 <button
                   key={minute}
                   type="button"
