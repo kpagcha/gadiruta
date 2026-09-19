@@ -63,7 +63,6 @@
     "resultsRetry": "Reintentar",
     "line": "Línea {{line}}",
     "earlierDepartures": "Salidas anteriores",
-    "earlierDeparturesLoading": "Cargando salidas anteriores…",
     "earlierDeparturesUnavailable": "No hemos podido cargar las salidas anteriores. Inténtalo de nuevo.",
     "showMore": "Mostrar más",
     "durationMinutes_one": "{{count}} minuto",

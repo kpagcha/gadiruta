@@ -11,6 +11,7 @@ import {
   type DirectJourneysResponse,
 } from '../../api/journeys';
 import { Button } from '../../components/Button';
+import { Icon } from '../../components/Icon';
 import { Panel } from '../../components/Panel';
 import { Skeleton } from '../../components/Skeleton';
 import { JourneyServiceCard } from './JourneyServiceCard';
@@ -226,12 +227,18 @@ export function DirectJourneyResults({
             <div className="mt-4">
               <Button
                 variant="text"
+                className="gap-2"
                 disabled={earlierSearch.isPending}
                 onClick={() => void showEarlierJourneys()}
               >
-                {earlierSearch.isPending
-                  ? t('journey.earlierDeparturesLoading')
-                  : t('journey.earlierDepartures')}
+                {earlierSearch.isPending && (
+                  <Icon
+                    name="loader"
+                    size={16}
+                    className="animate-spin motion-reduce:animate-none"
+                  />
+                )}
+                {t('journey.earlierDepartures')}
               </Button>
               {earlierErrorKey === resultKey && (
                 <p className="mt-1 text-sm text-muted" role="status">

@@ -63,7 +63,6 @@
     "resultsRetry": "Try again",
     "line": "Line {{line}}",
     "earlierDepartures": "Earlier departures",
-    "earlierDeparturesLoading": "Loading earlier departures…",
     "earlierDeparturesUnavailable": "We couldn’t load earlier departures. Please try again.",
     "showMore": "Show more",
     "durationMinutes_one": "{{count}} minute",
