@@ -56,7 +56,7 @@
     "resultsTitle": "Servicios directos",
     "resultsRoute": "De {{origin}} a {{destination}}",
     "resultsLoading": "Buscando servicios directos…",
-    "resultsEmpty": "CTAN no ha devuelto servicios directos para esta búsqueda. Las rutas con transbordos todavía no están disponibles.",
+    "resultsEmpty": "No encontramos un servicio directo para este trayecto. Los trayectos con transbordo aún no están disponibles.",
     "resultsUnavailable": "No hemos podido cargar un horario directo completo. Inténtalo de nuevo.",
     "resultPlacesChanged": "Uno o ambos lugares seleccionados ya no están disponibles. Elígelos otra vez e inténtalo de nuevo.",
     "resultDateUnavailable": "Elige una fecha desde hoy hasta el final de este año.",

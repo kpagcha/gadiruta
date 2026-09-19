@@ -56,7 +56,7 @@
     "resultsTitle": "Direct services",
     "resultsRoute": "{{origin}} to {{destination}}",
     "resultsLoading": "Finding direct services…",
-    "resultsEmpty": "CTAN returned no direct services for this search. Routes requiring transfers aren’t supported yet.",
+    "resultsEmpty": "We couldn’t find a direct service for this journey. Connecting trips aren’t available here yet.",
     "resultsUnavailable": "We couldn’t load a complete direct timetable. Please try again.",
     "resultPlacesChanged": "One or both selected places are no longer available. Choose them again and try again.",
     "resultDateUnavailable": "Choose a date from today through the end of this year.",

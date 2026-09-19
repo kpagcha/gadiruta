@@ -58,8 +58,8 @@ Notes:
   `horarios_lineas` requests to extract usable services. It fails rather than showing a partial
   timetable if any candidate lookup fails. See `docs/ctan-api.md` for upstream constraints and
   extraction rules.
-- CTAN's exact no-data response is shown as “no direct services returned”; it is not evidence that
-  no public-transport trip exists. The UI explicitly says transfers are unsupported.
+- CTAN's exact no-data response is presented as no direct service found; it is not evidence that
+  no public-transport trip exists. The UI explains that connecting trips are not available yet.
 - Searches at least 60 days ahead show a cautious operator-confirmation note. This reflects the
   practical possibility of later timetable changes without presenting CTAN's calendar response as
   exact. CTAN line metadata supplies a mode per line, normalized to a small stable category set;
@@ -72,8 +72,9 @@ Notes:
   warning.
 - Selecting the second confirmed place automatically starts a direct search. The submit button also
   refreshes a search whose places, date, and optional departure time are unchanged.
-- After a successful search, desktop presents the search card beside results. On mobile, the card
-  collapses to an actionable origin-to-destination summary that expands to edit the search.
+- The search card stays visible while scrolling: offset from the top on desktop and at the top on
+  mobile. After every completed result, including an empty result, mobile uses an actionable
+  origin-to-destination summary that expands to edit the search.
 
 ---
 

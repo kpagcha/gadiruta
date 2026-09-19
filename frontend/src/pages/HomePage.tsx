@@ -66,8 +66,8 @@ export function HomePage() {
   const isSearching = hasSubmittedSearch && (directSearch.isPending || directSearch.isFetching);
   const isSearchLocked = isSearching || isEarlierSearchPending;
   const { resultsPanelRef, requestResultsScroll } = useScrollToResults(isSearching);
-  const hasDirectServices = Boolean(directSearch.data?.items.length);
-  const showCompactSearch = hasDirectServices && expandedSearchKey !== submittedSearchKey;
+  const hasSearchResults = directSearch.data !== undefined;
+  const showCompactSearch = hasSearchResults && expandedSearchKey !== submittedSearchKey;
   const schedulesAreApproximate = isScheduleApproximate(journeyDate, today);
 
   useEffect(() => {
@@ -133,6 +133,7 @@ export function HomePage() {
       submittedParameters.to === nextDestination.place.slug &&
       submittedParameters.date === journeyDate &&
       submittedParameters.departAfter === (departAfter || null);
+    setExpandedSearchKey(null);
     if (isCurrentSearch) {
       refreshJourneySearch();
       return;
@@ -196,7 +197,10 @@ export function HomePage() {
         </div>
       )}
 
-      <Panel className={searchPanelClass} aria-label={t('journey.searchForm')}>
+      <Panel
+        className={`sticky top-0 z-20 desktop:top-8 ${searchPanelClass ?? ''}`}
+        aria-label={t('journey.searchForm')}
+      >
         {showCompactSearch && origin.place && destination.place && (
           <CompactJourneySearchSummary
             origin={origin.place}
