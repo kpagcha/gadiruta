@@ -4,7 +4,6 @@ import { useEffect, useId, useRef, useState } from 'react';
 import { Button } from '../Button';
 import { Icon } from '../Icon';
 import { calendarDays, monthKey, parseCalendarDate, shiftMonth } from './calendar';
-import { TimePicker } from './TimePicker';
 
 /** Supply context-specific wording while keeping the picker independent of any feature namespace. */
 export interface DateTimePickerLabels {
@@ -16,12 +15,6 @@ export interface DateTimePickerLabels {
   previousMonth: string;
   nextMonth: string;
   time: string;
-  timeHours: string;
-  timeMinutes: string;
-  minuteStep: string;
-  tenMinuteSteps: string;
-  fifteenMinuteSteps: string;
-  clearTime: string;
   confirm: string;
 }
 
@@ -253,22 +246,19 @@ export function DateTimePicker({
               ),
             )}
           </div>
-          <div className="mt-4 grid gap-1.5 border-t border-line-subtle pt-4 text-[12px] font-[650]">
-            <p id={`${dialogId}-time-label`}>{labels.time}</p>
-            <TimePicker
+          <label
+            className="mt-4 grid gap-1.5 border-t border-line-subtle pt-4 text-[12px] font-[650]"
+            htmlFor={`${dialogId}-time`}
+          >
+            {labels.time}
+            <input
+              id={`${dialogId}-time`}
+              className="min-h-11 rounded-xl border border-line-input bg-surface-input px-3 text-sm font-normal outline-none focus:border-accent"
+              type="time"
               value={draftTime}
-              onChange={setDraftTime}
-              labelledBy={`${dialogId}-time-label`}
-              labels={{
-                hours: labels.timeHours,
-                minutes: labels.timeMinutes,
-                minuteStep: labels.minuteStep,
-                tenMinuteSteps: labels.tenMinuteSteps,
-                fifteenMinuteSteps: labels.fifteenMinuteSteps,
-                clear: labels.clearTime,
-              }}
+              onChange={(event) => setDraftTime(event.target.value)}
             />
-          </div>
+          </label>
           <Button size="compact" className="mt-4 w-full px-4" onClick={confirmDateTime}>
             {labels.confirm}
           </Button>
