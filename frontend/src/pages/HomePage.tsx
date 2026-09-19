@@ -1,6 +1,6 @@
 /** Render selected-place direct journey search, its shareable URL, and normalized result states. */
 
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSearchParams } from 'react-router';
 import type { DirectJourneySearchParameters } from '../api/journeys';
@@ -51,6 +51,7 @@ export function HomePage() {
   const [departAfter, setDepartAfter] = useState(submittedParameters?.departAfter ?? '');
   const [expandedSearchKey, setExpandedSearchKey] = useState<string | null>(null);
   const [searchExecution, setSearchExecution] = useState(0);
+  const [isEarlierSearchPending, setIsEarlierSearchPending] = useState(false);
   const hydratedSearchRef = useRef<string | null>(null);
   const maximumDate = today.slice(0, 4) + '-12-31';
   const hasSubmittedSearch = hasDirectJourneyParameters(submittedParameters);
@@ -63,6 +64,7 @@ export function HomePage() {
       ].join(':')
     : null;
   const isSearching = hasSubmittedSearch && (directSearch.isPending || directSearch.isFetching);
+  const isSearchLocked = isSearching || isEarlierSearchPending;
   const { resultsPanelRef, requestResultsScroll } = useScrollToResults(isSearching);
   const hasDirectServices = Boolean(directSearch.data?.items.length);
   const showCompactSearch = hasDirectServices && expandedSearchKey !== submittedSearchKey;
@@ -92,19 +94,27 @@ export function HomePage() {
 
   /** Exchange complete field values, including partially typed input, in one React update. */
   function swapPlaces(): void {
+    if (isSearchLocked) return;
     setOrigin(destination);
     setDestination(origin);
     if (destination.place && origin.place) searchJourneys(destination, origin);
   }
 
+  /** Share earlier-result request state so all direct-search actions use one request lock. */
+  const setEarlierSearchPending = useCallback((isPending: boolean): void => {
+    setIsEarlierSearchPending(isPending);
+  }, []);
+
   /** Start a fresh result execution so local result paging cannot cross a submit or refresh. */
   function refreshJourneySearch(): void {
+    if (isSearchLocked) return;
     setSearchExecution((current) => current + 1);
     void directSearch.refetch();
   }
 
   /** Start a new URL-defined search or refresh the current one when its parameters are unchanged. */
   function searchJourneys(nextOrigin: PlaceFieldValue, nextDestination: PlaceFieldValue): void {
+    if (isSearchLocked) return;
     if (
       !nextOrigin.place ||
       !nextDestination.place ||
@@ -205,6 +215,7 @@ export function HomePage() {
             today={today}
             maximumDate={maximumDate}
             isSearching={isSearching}
+            isSearchLocked={isSearchLocked}
             schedulesAreApproximate={schedulesAreApproximate}
             onOriginChange={updateOrigin}
             onDestinationChange={updateDestination}
@@ -220,9 +231,11 @@ export function HomePage() {
         <DirectJourneyResults
           panelRef={resultsPanelRef}
           isSearching={isSearching}
+          isSearchLocked={isSearchLocked}
           error={directSearch.error}
           data={directSearch.data}
           searchExecution={searchExecution}
+          onEarlierSearchPendingChange={setEarlierSearchPending}
           onRetry={refreshJourneySearch}
         />
       )}

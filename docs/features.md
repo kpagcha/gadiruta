@@ -43,7 +43,8 @@ Status: Initial direct journey search implemented
   departure-time search has earlier services, one earlier-segment request retrieves the complete
   preceding portion of that selected-day timetable; the interface prepends it in the same visual
   pages without further requests.
-- [x] Loading state with a direct-service skeleton card and submit-button spinner.
+- [x] Loading state with a direct-service skeleton card and submit-button spinner. Direct-search
+  actions are locked while either a main or earlier-departures request is pending.
 - [x] Cautious empty state.
 - [x] Retryable error state.
 - [x] Search state in URL.

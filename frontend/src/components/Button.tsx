@@ -19,7 +19,7 @@ const variantClasses: Record<ButtonVariant, string> = {
     'grid place-items-center rounded-full text-muted transition-colors hover:bg-surface-hover hover:text-ink disabled:opacity-35',
   outlinedIcon:
     'grid place-items-center rounded-full border border-line bg-paper text-accent transition-colors hover:enabled:border-line-hover hover:enabled:bg-surface-hover-strong disabled:opacity-45',
-  text: 'inline-flex min-h-11 items-center bg-transparent px-1.25 text-sm font-[650] text-accent underline decoration-1 underline-offset-4',
+  text: 'inline-flex min-h-11 items-center bg-transparent px-1.25 text-sm font-[650] text-accent underline decoration-1 underline-offset-4 disabled:opacity-45',
 };
 
 const sizeClasses: Record<ButtonSize, string> = {

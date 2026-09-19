@@ -18,6 +18,7 @@ interface JourneySearchFormProps {
   today: string;
   maximumDate: string;
   isSearching: boolean;
+  isSearchLocked: boolean;
   schedulesAreApproximate: boolean;
   onOriginChange: (value: PlaceFieldValue) => void;
   onDestinationChange: (value: PlaceFieldValue) => void;
@@ -36,6 +37,7 @@ export function JourneySearchForm({
   today,
   maximumDate,
   isSearching,
+  isSearchLocked,
   schedulesAreApproximate,
   onOriginChange,
   onDestinationChange,
@@ -78,7 +80,7 @@ export function JourneySearchForm({
           className="size-11 translate-y-3.5"
           aria-label={t('journey.swap')}
           title={t('journey.swap')}
-          disabled={!origin.text && !destination.text}
+          disabled={(!origin.text && !destination.text) || isSearchLocked}
           onClick={swapPlaces}
         >
           <Icon name="swap" size={20} />
@@ -134,7 +136,7 @@ export function JourneySearchForm({
       <Button
         type="submit"
         className="mt-5 w-full"
-        disabled={!canSubmit || isSearching}
+        disabled={!canSubmit || isSearchLocked}
         aria-busy={isSearching}
       >
         <Icon

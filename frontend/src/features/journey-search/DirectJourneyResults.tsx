@@ -77,9 +77,11 @@ function mergeJourneys(...pages: DirectJourney[][]): DirectJourney[] {
 interface DirectJourneyResultsProps {
   panelRef: RefObject<HTMLElement | null>;
   isSearching: boolean;
+  isSearchLocked: boolean;
   error: Error | null;
   data: DirectJourneysResponse | undefined;
   searchExecution: number;
+  onEarlierSearchPendingChange: (isPending: boolean) => void;
   onRetry: () => void;
 }
 
@@ -87,9 +89,11 @@ interface DirectJourneyResultsProps {
 export function DirectJourneyResults({
   panelRef,
   isSearching,
+  isSearchLocked,
   error,
   data,
   searchExecution,
+  onEarlierSearchPendingChange,
   onRetry,
 }: DirectJourneyResultsProps) {
   const { t } = useTranslation();
@@ -156,6 +160,7 @@ export function DirectJourneyResults({
       setEarlierErrorKey(null);
       return;
     }
+    onEarlierSearchPendingChange(true);
     try {
       const earlierResult = await earlierSearch.mutateAsync(
         firstJourney.departure_time.slice(0, 5),
@@ -168,6 +173,8 @@ export function DirectJourneyResults({
       setEarlierErrorKey(null);
     } catch {
       setEarlierErrorKey(resultKey);
+    } finally {
+      onEarlierSearchPendingChange(false);
     }
   }
 
@@ -186,7 +193,7 @@ export function DirectJourneyResults({
       ref={panelRef}
       className="journey-panel-enter"
       aria-labelledby="journey-results-title"
-      aria-busy={isSearching}
+      aria-busy={isSearchLocked}
     >
       <header>
         <h2 id="journey-results-title" className="text-[21px] font-[650] tracking-[-0.5px]">
@@ -228,7 +235,7 @@ export function DirectJourneyResults({
               <Button
                 variant="text"
                 className="gap-2"
-                disabled={earlierSearch.isPending}
+                disabled={isSearchLocked}
                 onClick={() => void showEarlierJourneys()}
               >
                 {earlierSearch.isPending && (
