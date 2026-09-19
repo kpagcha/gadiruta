@@ -17,7 +17,6 @@ from transport.providers.base import ProviderError
 from transport.providers.wiring import get_direct_journey_provider
 
 CACHE_TTL_SECONDS = 60 * 60
-EARLIER_DEPARTURE_PAGE_SIZE = 4
 
 
 class JourneyPlaceNotFoundError(Exception):
@@ -39,13 +38,14 @@ def search_direct_journeys(
     depart_after: time | None = None,
     depart_before: time | None = None,
 ) -> DirectJourneySearchResult:
-    """Return direct services filtered by optional departure bounds and an earlier-page cursor.
+    """Return direct services filtered by optional departure bounds and an earlier-result cutoff.
 
     The active provider owns its upstream date interpretation. Gadiruta limits requests to today's
     date through the end of the current Europe/Madrid calendar year because CTAN exposes no
-    reliable year parameter and misclassifies observed holidays. A ``depart_before`` cursor returns
-    only the preceding page, ordered chronologically, while the unbounded response stays complete
-    for the existing later-results UI.
+    reliable year parameter and misclassifies observed holidays. A ``depart_before`` cutoff returns
+    every chronologically ordered service from the selected day's beginning up to, but excluding,
+    that cutoff. The browser presents the returned earlier services in visual pages, just as it
+    does the complete later portion of the timetable.
     """
     _validate_journey_date(journey_date)
     provider = get_direct_journey_provider()
@@ -91,8 +91,8 @@ def search_direct_journeys(
             and any(journey.departure_time < journeys[0].departure_time for journey in all_journeys)
         )
     else:
-        journeys = filtered_journeys[-EARLIER_DEPARTURE_PAGE_SIZE:]
-        has_earlier_departures = len(filtered_journeys) > len(journeys)
+        journeys = filtered_journeys
+        has_earlier_departures = False
     return DirectJourneySearchResult(
         origin=public_origin,
         destination=public_destination,

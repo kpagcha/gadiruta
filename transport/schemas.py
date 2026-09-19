@@ -60,7 +60,8 @@ class DirectJourneysResponse(Schema):
     depart_before: time | None
     has_earlier_departures: bool = Field(
         description=(
-            "Whether another direct-service page exists before this response's first departure."
+            "Whether services exist before this response's first departure; false when "
+            "depart_before returns the complete earlier segment."
         )
     )
     fetched_at: datetime

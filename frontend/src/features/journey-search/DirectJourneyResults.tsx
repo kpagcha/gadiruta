@@ -23,11 +23,16 @@ interface JourneyResultPage {
   page: number;
 }
 
-/** Keep earlier cursor pages separate from the complete initial result. */
-interface EarlierJourneyPages {
+/** Keep one complete earlier result segment separate from the complete later result. */
+interface EarlierJourneySegment {
   resultKey: string;
   items: DirectJourney[];
-  hasEarlierDepartures: boolean;
+}
+
+/** Track how many visual pages from a fetched earlier segment should be visible. */
+interface EarlierJourneyPage {
+  resultKey: string;
+  page: number;
 }
 
 /** Identify a response independently of cache timestamps so prior-page state cannot cross searches. */
@@ -41,7 +46,7 @@ function journeyResultKey(data: DirectJourneysResponse): string {
   ].join('|');
 }
 
-/** Identify one displayed service when merging earlier cursor pages without duplicate cards. */
+/** Identify one displayed service when merging earlier and later result segments without duplicates. */
 function journeyKey(journey: DirectJourney): string {
   return [
     journey.line_code,
@@ -53,7 +58,7 @@ function journeyKey(journey: DirectJourney): string {
   ].join('|');
 }
 
-/** Merge service pages into one chronological, duplicate-free list for visual presentation. */
+/** Merge visible result segments into one chronological, duplicate-free service list. */
 function mergeJourneys(...pages: DirectJourney[][]): DirectJourney[] {
   const journeys = new Map<string, DirectJourney>();
   for (const journey of pages.flat()) journeys.set(journeyKey(journey), journey);
@@ -85,7 +90,10 @@ export function DirectJourneyResults({
 }: DirectJourneyResultsProps) {
   const { t } = useTranslation();
   const [journeyResultPage, setJourneyResultPage] = useState<JourneyResultPage | null>(null);
-  const [earlierJourneyPages, setEarlierJourneyPages] = useState<EarlierJourneyPages | null>(null);
+  const [earlierJourneySegment, setEarlierJourneySegment] = useState<EarlierJourneySegment | null>(
+    null,
+  );
+  const [earlierJourneyPage, setEarlierJourneyPage] = useState<EarlierJourneyPage | null>(null);
   const [earlierErrorKey, setEarlierErrorKey] = useState<string | null>(null);
   const currentJourneyPage =
     journeyResultPage !== null && journeyResultPage.fetchedAt === data?.fetched_at
@@ -96,11 +104,16 @@ export function DirectJourneyResults({
     ? data.items.slice(0, currentJourneyPage * VISIBLE_JOURNEY_COUNT)
     : [];
   const earlierJourneys =
-    earlierJourneyPages?.resultKey === resultKey ? earlierJourneyPages.items : [];
-  const visibleJourneys = mergeJourneys(earlierJourneys, currentJourneys);
+    earlierJourneySegment?.resultKey === resultKey ? earlierJourneySegment.items : [];
+  const currentEarlierPage =
+    earlierJourneyPage?.resultKey === resultKey ? earlierJourneyPage.page : 0;
+  const visibleEarlierJourneys = earlierJourneys.slice(
+    Math.max(0, earlierJourneys.length - currentEarlierPage * VISIBLE_JOURNEY_COUNT),
+  );
+  const visibleJourneys = mergeJourneys(visibleEarlierJourneys, currentJourneys);
   const hasEarlierDepartures = data
-    ? earlierJourneyPages?.resultKey === resultKey
-      ? earlierJourneyPages.hasEarlierDepartures
+    ? earlierJourneySegment?.resultKey === resultKey
+      ? visibleEarlierJourneys.length < earlierJourneys.length
       : data.has_earlier_departures
     : false;
   const earlierSearch = useMutation({
@@ -127,22 +140,27 @@ export function DirectJourneyResults({
     return t('journey.resultsUnavailable');
   }
 
-  /** Retrieve the preceding service page using the earliest currently displayed departure as cursor. */
-  async function loadEarlierJourneys(): Promise<void> {
-    const firstJourney = visibleJourneys[0];
+  /** Fetch the complete earlier segment once, then reveal one earlier visual page per action. */
+  async function showEarlierJourneys(): Promise<void> {
+    const firstJourney = currentJourneys[0];
     if (!data || !resultKey || !firstJourney) return;
+    if (earlierJourneySegment?.resultKey === resultKey) {
+      setEarlierJourneyPage((current) => ({
+        resultKey,
+        page: current?.resultKey === resultKey ? current.page + 1 : 1,
+      }));
+      setEarlierErrorKey(null);
+      return;
+    }
     try {
       const earlierResult = await earlierSearch.mutateAsync(
         firstJourney.departure_time.slice(0, 5),
       );
-      setEarlierJourneyPages((current) => ({
+      setEarlierJourneySegment({
         resultKey,
-        items: mergeJourneys(
-          current?.resultKey === resultKey ? current.items : [],
-          earlierResult.items,
-        ),
-        hasEarlierDepartures: earlierResult.has_earlier_departures,
-      }));
+        items: earlierResult.items,
+      });
+      setEarlierJourneyPage({ resultKey, page: 1 });
       setEarlierErrorKey(null);
     } catch {
       setEarlierErrorKey(resultKey);
@@ -196,7 +214,7 @@ export function DirectJourneyResults({
               <Button
                 variant="text"
                 disabled={earlierSearch.isPending}
-                onClick={() => void loadEarlierJourneys()}
+                onClick={() => void showEarlierJourneys()}
               >
                 {earlierSearch.isPending
                   ? t('journey.earlierDeparturesLoading')
@@ -220,7 +238,7 @@ export function DirectJourneyResults({
               </li>
             ))}
           </ol>
-          {visibleJourneys.length < data.items.length && (
+          {currentJourneys.length < data.items.length && (
             <Button
               variant="text"
               className="mt-4"

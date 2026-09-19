@@ -98,32 +98,33 @@ def test_service_filters_a_cached_complete_timetable(
     assert direct_provider.calls[0][1].external_id == "23"
 
 
-def test_service_returns_chronological_pages_before_a_departure_cursor(
+def test_service_returns_the_complete_chronological_segment_before_a_departure_cutoff(
     direct_provider: StubDirectJourneyProvider,
     selected_places: tuple[CanonicalPlace, CanonicalPlace],
 ) -> None:
-    """Return the immediately preceding services while retaining the cached selected-day table."""
+    """Return every earlier service while retaining and reusing the cached selected-day table."""
     origin, destination = selected_places
     direct_provider.journeys = tuple(
         DirectJourney(f"M-{hour}", time(hour, 0), time(hour, 20), 20, None) for hour in range(6, 12)
     )
 
-    first_page = service.search_direct_journeys(
+    first_segment = service.search_direct_journeys(
         origin.slug, destination.slug, timezone.localdate(), None, time(11, 0)
     )
-    second_page = service.search_direct_journeys(
+    second_segment = service.search_direct_journeys(
         origin.slug, destination.slug, timezone.localdate(), None, time(7, 0)
     )
 
-    assert [journey.departure_time for journey in first_page.catalog.journeys] == [
+    assert [journey.departure_time for journey in first_segment.catalog.journeys] == [
+        time(6, 0),
         time(7, 0),
         time(8, 0),
         time(9, 0),
         time(10, 0),
     ]
-    assert first_page.has_earlier_departures is True
-    assert [journey.departure_time for journey in second_page.catalog.journeys] == [time(6, 0)]
-    assert second_page.has_earlier_departures is False
+    assert first_segment.has_earlier_departures is False
+    assert [journey.departure_time for journey in second_segment.catalog.journeys] == [time(6, 0)]
+    assert second_segment.has_earlier_departures is False
     assert len(direct_provider.calls) == 1
 
 
@@ -179,12 +180,12 @@ def test_api_returns_normalized_services_and_the_calendar_warning(
     }
 
 
-def test_api_returns_the_previous_chronological_departure_page(
+def test_api_returns_the_complete_earlier_chronological_departure_segment(
     client: Client,
     direct_provider: StubDirectJourneyProvider,
     selected_places: tuple[CanonicalPlace, CanonicalPlace],
 ) -> None:
-    """Expose the preceding fixed-size page and its cursor metadata through the public API."""
+    """Expose every service before a cutoff so the client can paginate it without new requests."""
     origin, destination = selected_places
     direct_provider.journeys = tuple(
         DirectJourney(f"M-{hour}", time(hour, 0), time(hour, 20), 20, None) for hour in range(6, 12)
@@ -204,8 +205,9 @@ def test_api_returns_the_previous_chronological_departure_page(
     payload = response.json()
     assert payload["depart_after"] is None
     assert payload["depart_before"] == "11:00:00"
-    assert payload["has_earlier_departures"] is True
+    assert payload["has_earlier_departures"] is False
     assert [item["departure_time"] for item in payload["items"]] == [
+        "06:00:00",
         "07:00:00",
         "08:00:00",
         "09:00:00",

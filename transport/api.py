@@ -81,7 +81,7 @@ def direct_journeys(
     depart_after: time | None = Query(None),  # noqa: B008
     depart_before: time | None = Query(  # noqa: B008
         None,
-        description="Return the preceding page of services before this departure-time cursor.",
+        description="Return all selected-day services before this exclusive departure-time cutoff.",
     ),
 ) -> (
     DirectJourneysResponse
@@ -94,8 +94,9 @@ def direct_journeys(
     `origin` and `destination` must be stable Gadiruta place slugs returned by place search.
     Gadiruta does not calculate transfers. CTAN has no reliable year parameter and has returned
     working-day schedules for observed holidays, so dates are limited to the current local year
-    and every response warns that calendar accuracy is not guaranteed. `depart_before` returns at
-    most four chronologically ordered services immediately before its exclusive time cursor.
+    and every response warns that calendar accuracy is not guaranteed. `depart_before` returns the
+    chronologically ordered selected-day services before its exclusive time cutoff; clients can
+    page that complete earlier segment locally.
     """
     try:
         result = search_direct_journeys(
