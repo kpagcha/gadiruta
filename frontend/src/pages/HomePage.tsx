@@ -50,6 +50,7 @@ export function HomePage() {
   const [journeyDate, setJourneyDate] = useState(submittedParameters?.date ?? today);
   const [departAfter, setDepartAfter] = useState(submittedParameters?.departAfter ?? '');
   const [expandedSearchKey, setExpandedSearchKey] = useState<string | null>(null);
+  const [searchExecution, setSearchExecution] = useState(0);
   const hydratedSearchRef = useRef<string | null>(null);
   const maximumDate = today.slice(0, 4) + '-12-31';
   const hasSubmittedSearch = hasDirectJourneyParameters(submittedParameters);
@@ -96,6 +97,12 @@ export function HomePage() {
     if (destination.place && origin.place) searchJourneys(destination, origin);
   }
 
+  /** Start a fresh result execution so local result paging cannot cross a submit or refresh. */
+  function refreshJourneySearch(): void {
+    setSearchExecution((current) => current + 1);
+    void directSearch.refetch();
+  }
+
   /** Start a new URL-defined search or refresh the current one when its parameters are unchanged. */
   function searchJourneys(nextOrigin: PlaceFieldValue, nextDestination: PlaceFieldValue): void {
     if (
@@ -117,9 +124,10 @@ export function HomePage() {
       submittedParameters.date === journeyDate &&
       submittedParameters.departAfter === (departAfter || null);
     if (isCurrentSearch) {
-      void directSearch.refetch();
+      refreshJourneySearch();
       return;
     }
+    setSearchExecution((current) => current + 1);
     setSearchParameters(nextParameters);
   }
 
@@ -214,7 +222,8 @@ export function HomePage() {
           isSearching={isSearching}
           error={directSearch.error}
           data={directSearch.data}
-          onRetry={() => void directSearch.refetch()}
+          searchExecution={searchExecution}
+          onRetry={refreshJourneySearch}
         />
       )}
     </main>

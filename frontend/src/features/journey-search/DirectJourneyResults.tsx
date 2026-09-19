@@ -19,7 +19,7 @@ const VISIBLE_JOURNEY_COUNT = 4;
 
 /** Track how many services from one fetched result should be visible. */
 interface JourneyResultPage {
-  fetchedAt: string;
+  resultKey: string;
   page: number;
 }
 
@@ -35,14 +35,15 @@ interface EarlierJourneyPage {
   page: number;
 }
 
-/** Identify a response independently of cache timestamps so prior-page state cannot cross searches. */
-function journeyResultKey(data: DirectJourneysResponse): string {
+/** Identify a result execution so previous local pages cannot cross a deliberate refresh. */
+function journeyResultKey(data: DirectJourneysResponse, searchExecution: number): string {
   return [
     data.origin.slug,
     data.destination.slug,
     data.date,
     data.depart_after ?? '',
     data.fetched_at,
+    searchExecution,
   ].join('|');
 }
 
@@ -77,6 +78,7 @@ interface DirectJourneyResultsProps {
   isSearching: boolean;
   error: Error | null;
   data: DirectJourneysResponse | undefined;
+  searchExecution: number;
   onRetry: () => void;
 }
 
@@ -86,6 +88,7 @@ export function DirectJourneyResults({
   isSearching,
   error,
   data,
+  searchExecution,
   onRetry,
 }: DirectJourneyResultsProps) {
   const { t } = useTranslation();
@@ -95,11 +98,11 @@ export function DirectJourneyResults({
   );
   const [earlierJourneyPage, setEarlierJourneyPage] = useState<EarlierJourneyPage | null>(null);
   const [earlierErrorKey, setEarlierErrorKey] = useState<string | null>(null);
+  const resultKey = data ? journeyResultKey(data, searchExecution) : null;
   const currentJourneyPage =
-    journeyResultPage !== null && journeyResultPage.fetchedAt === data?.fetched_at
+    journeyResultPage !== null && journeyResultPage.resultKey === resultKey
       ? journeyResultPage.page
       : 1;
-  const resultKey = data ? journeyResultKey(data) : null;
   const currentJourneys = data
     ? data.items.slice(0, currentJourneyPage * VISIBLE_JOURNEY_COUNT)
     : [];
@@ -165,6 +168,16 @@ export function DirectJourneyResults({
     } catch {
       setEarlierErrorKey(resultKey);
     }
+  }
+
+  /** Reveal the next local page from the complete later-result segment. */
+  function showMoreJourneys(): void {
+    if (!resultKey) return;
+    setJourneyResultPage((current) =>
+      current?.resultKey === resultKey
+        ? { ...current, page: current.page + 1 }
+        : { resultKey, page: 2 },
+    );
   }
 
   return (
@@ -239,17 +252,7 @@ export function DirectJourneyResults({
             ))}
           </ol>
           {currentJourneys.length < data.items.length && (
-            <Button
-              variant="text"
-              className="mt-4"
-              onClick={() =>
-                setJourneyResultPage((current) =>
-                  current?.fetchedAt === data.fetched_at
-                    ? { ...current, page: current.page + 1 }
-                    : { fetchedAt: data.fetched_at, page: 2 },
-                )
-              }
-            >
+            <Button variant="text" className="mt-4" onClick={showMoreJourneys}>
               {t('journey.showMore')}
             </Button>
           )}
