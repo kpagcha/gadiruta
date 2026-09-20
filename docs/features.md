@@ -1,252 +1,153 @@
 # Feature Inventory
 
-This document tracks Gadiruta's **current functional capabilities**.
-
-Keep it concise. Update it when features are added, removed, completed, substantially changed, or explicitly deferred.
-
-Do not use this file as a development diary. Git history records implementation changes.
-
----
+This file tracks current product capability and the next major milestones. Git history records implementation details.
 
 ## Backend foundation
 
-Status: Implemented
+**Status: Implemented**
 
-- [x] Existing Django project configured for PostgreSQL and environment-based settings.
-- [x] Versioned Django Ninja API with typed application liveness response.
-- [x] Generated OpenAPI schema and interactive Scalar API documentation with global data attribution.
-- [x] Locked dependencies, pytest, Ruff lint/format checks, and mypy type checks.
-- [x] Persistent canonical place IDs and provider-reference crosswalks.
+- [x] Django + PostgreSQL backend with environment-based settings.
+- [x] Versioned Django Ninja API and liveness endpoint.
+- [x] Generated OpenAPI with Scalar UI and global data attribution.
+- [x] pytest, Ruff, mypy, locked Python dependencies, and shared Git hooks.
+- [x] Canonical place identities and provider-reference crosswalks.
 
-The CTAN place-search and direct-journey backends, plus the English/Spanish search homepage, are
-implemented. Direct lookup is limited to dates from today through the current Europe/Madrid
-calendar year because CTAN has no reliable year parameter and mishandles observed holidays.
-Automated frontend interaction tests (such as autocomplete, swapping, and language-switching
-tests) are deferred as low priority and do not block current milestones. Frontend verification uses
-static checks and manual browser checks for now.
+## Place search
 
----
+**Status: Implemented**
 
-## Journey search
+- [x] Cádiz-area population-centre catalogue.
+- [x] Municipality context.
+- [x] Accent/case-insensitive ranked search.
+- [x] Stable Gadiruta place IDs/slugs.
+- [x] Origin/destination autocomplete and swap.
+- [x] Loading, empty, retryable-error, and keyboard-accessible states.
+- [x] Provider-neutral place boundary with CTAN REST as the current source.
 
-Status: Initial direct journey search implemented
+## Direct journey search
 
-- [x] Origin autocomplete.
-- [x] Destination autocomplete.
-- [x] Swap origin/destination, including partially typed input.
-- [x] Calendar date selection, from today through the current local calendar year, with an optional
-  “depart at or after” time filter, explicit confirmation, and a resettable “Now” default.
-- [x] Direct service lookup through the active direct-journey provider.
-- [x] Transport-mode icons in direct-service cards, with a neutral fallback for missing provider data.
-- [x] Journey result cards with line code, departure, arrival, duration, and source note when present;
-  initially show four services and reveal the next four with each “Show more” action. When a
-  departure-time search has earlier services, one earlier-segment request retrieves the complete
-  preceding portion of that selected-day timetable; the interface prepends it in the same visual
-  pages without further requests.
-- [x] Loading state with a direct-service skeleton card and submit-button spinner. Direct-search
-  actions are locked while either a main or earlier-departures request is pending.
-- [x] Cautious empty state.
-- [x] Retryable error state.
-- [x] Search state in URL.
-- [x] Shareable/bookmarkable searches.
+**Status: Initial CTAN REST implementation exists; data source scheduled for replacement**
 
-Notes:
+- [x] Date selection.
+- [x] Optional departure-time filter.
+- [x] Automatic search after selecting both places.
+- [x] Journey result cards and responsive result layout.
+- [x] Search state in the URL and restoration on reload.
+- [x] Provider-neutral direct-journey service boundary.
+- [ ] Replace CTAN REST timetable lookup with locally imported GTFS data.
 
-- MVP supports direct journeys only.
-- Routes requiring transfers must not be presented as impossible; they are simply unsupported in the MVP.
-- Direct lookup uses `horarios_origen_destino` to find candidate lines, then dated
-  `horarios_lineas` requests to extract usable services. It fails rather than showing a partial
-  timetable if any candidate lookup fails. See `docs/ctan-api.md` for upstream constraints and
-  extraction rules.
-- CTAN's exact no-data response is presented as no direct service found; it is not evidence that
-  no public-transport trip exists. The UI explains that connecting trips are not available yet.
-- Searches at least 60 days ahead show a cautious operator-confirmation note. This reflects the
-  practical possibility of later timetable changes without presenting CTAN's calendar response as
-  exact. CTAN line metadata supplies a mode per line, normalized to a small stable category set;
-  unknown metadata uses a neutral icon. Operators are not shown yet.
-- Shared search URLs use readable canonical place slugs (`from=cadiz&to=jerez`), resolving name
-  collisions with municipality context and then a stable numeric suffix when necessary.
-- Place suggestions support loading, empty, and retryable error states. Loading stays in the field
-  as a spinner so an empty popover is never displayed. Typing clears any previous selection; users
-  must select a suggestion to confirm a place. Choosing the same origin and destination displays a
-  warning.
-- Selecting the second confirmed place automatically starts a direct search. The submit button also
-  refreshes a search whose places, date, and optional departure time are unchanged.
-- The search card stays visible while scrolling: offset from the top on desktop and at the top on
-  mobile. After every completed result, including an empty result, mobile uses an actionable
-  origin-to-destination summary that expands to edit the search.
+The current REST implementation has calendar/date limitations and should not be expanded as the long-term timetable model.
 
----
+## GTFS migration
+
+**Status: Immediate next backend milestone**
+
+- [ ] Download and validate the CTAN unified GTFS feed.
+- [ ] Import agencies, stops, routes, trips, stop times, calendars, exceptions, and shapes.
+- [ ] Activate imports atomically and retain the previous valid dataset on failure.
+- [ ] Establish reliable `Place` ↔ GTFS stop associations.
+- [ ] Reproduce existing direct-journey searches from local GTFS data.
+- [ ] Verify holiday/date handling through `calendar.txt` and `calendar_dates.txt`.
+- [ ] Verify overnight/past-midnight service handling.
+- [ ] Audit mode/agency coverage, including rail, Trambahía, ferry, and buses.
+- [ ] Identify additional feeds if CTAN GTFS coverage is incomplete.
+- [ ] Retire unnecessary REST timetable dependencies after validation.
 
 ## Lines
 
-Status: Planned
+**Status: Planned**
 
 - [ ] Search/browse lines.
-- [ ] Line detail.
-- [ ] Operator.
-- [ ] Directions.
+- [ ] Line detail with operator and directions.
 - [ ] Ordered stops.
 - [ ] Timetable/schedule.
 - [ ] Relevant alerts.
-- [ ] Preserve route geometry when available.
+- [ ] Preserve route geometry.
 
----
+GTFS should supply the core line/route/trip data.
 
-## Stops / locations
+## Stops and locations
 
-Status: Population-centre search API and autocomplete implemented; detail pages and physical stops planned
+**Status: Population-centre search implemented; physical-stop features planned**
 
-- [x] Search Cádiz population centres by name or municipality, ignoring case and accents.
-- [x] Ranked, limited results with stable Gadiruta IDs and optional municipality names.
-- [x] One-hour catalogue cache and fetch timestamps.
-- [x] Provider-neutral catalogue/search boundary with CTAN as the current place-data implementation.
-- [x] Validated CTAN responses, saved fixtures, and offline error/timeout/cache tests.
-- [x] Distinguish empty results from unavailable provider data.
-- [x] Select population centres in the homepage autocomplete, with municipality context.
-- [ ] Search/open a stop or population centre.
-- [ ] Show serving lines.
-- [ ] Show upcoming services where supported.
-- [ ] Show direction/destination.
-- [ ] Show relevant alerts.
-
----
+- [x] Search/select population centres.
+- [ ] Place-to-GTFS-stop mapping.
+- [ ] Physical stop detail.
+- [ ] Serving lines.
+- [ ] Upcoming scheduled services.
+- [ ] Direction/destination.
+- [ ] Relevant alerts.
 
 ## Alerts
 
-Status: Planned
+**Status: Planned / source to verify**
 
-- [ ] Retrieve CTAN notices/alerts.
-- [ ] Associate alerts with affected lines where possible.
-- [ ] Surface relevant alerts in journey results.
-- [ ] Surface relevant alerts on line pages.
+- [ ] Identify the authoritative alert source.
+- [ ] Associate alerts with affected lines/stops where possible.
+- [ ] Surface relevant alerts in journeys and line/stop views.
 
----
+Investigate CTAN REST and any available GTFS-Realtime source before choosing the implementation.
 
 ## Favorites and history
 
-Status: Planned
+**Status: Planned**
 
-- [ ] Recent searches in localStorage.
-- [ ] Favorite journeys in localStorage.
+- [ ] Recent searches in `localStorage`.
+- [ ] Favorite journeys.
 - [ ] Favorite lines/stops if useful.
-- [ ] Storage format designed for possible future account migration.
-
----
 
 ## Localization
 
-Status: Implemented for the current homepage and not-found page
+**Status: Implemented for current UI**
 
-- [x] English UI.
-- [x] Spanish UI.
-- [x] English fallback language.
-- [x] Browser locale detection.
-- [x] EN / ES language switcher with a saved local preference when storage is available.
-- [x] No unlocalized user-facing strings in components.
+- [x] English and Spanish.
+- [x] English fallback.
+- [x] Browser-locale detection.
+- [x] Persisted EN/ES selection when storage is available.
+- [x] User-facing component strings use the translation system.
 
----
+## Appearance and accessibility
+
+**Status: Implemented for the current search flow**
+
+- [x] Mobile-first responsive layout.
+- [x] Light/dark theme with persisted preference.
+- [x] Keyboard-usable autocomplete.
+- [x] Accessible labels, focus states, skip link, and live status announcements.
 
 ## PWA / installability
 
-Status: High-priority post-MVP feature; not implemented
+**Status: High-priority post-MVP**
 
-The preferred post-MVP mobile experience is an installable enhancement of the existing React + Vite web application.
-It should be planned after the first-version journey, schedule, line, stop, alert, localization, and responsive
-milestones are complete.
-
-- [ ] Web app manifest and install metadata.
-- [ ] Application icons suitable for Android and iOS installation.
+- [ ] Web app manifest and application icons.
 - [ ] Service worker and offline app shell.
-- [ ] Sensible caching of recently viewed transport data, with explicit freshness and stale-data handling.
-- [ ] Predictable update detection, messaging, and activation behavior.
-
-React Native/Expo is not planned as a parallel frontend. Reconsider a native implementation only if genuinely native
-requirements emerge that the web app and PWA cannot satisfy well.
-
----
-
-## Appearance
-
-Status: Implemented
-
-- [x] Light and dark semantic color tokens shared across the frontend.
-- [x] Follow the browser's system preference on first visit.
-- [x] Explicit light/dark theme toggle with a saved browser preference.
-- [x] Preserve accessible contrast and focus states across both themes.
-
----
-
-## Responsive/accessibility
-
-Status: Implemented for place selection and initial journey search
-
-- [x] Mobile-first responsive layout.
-- [x] Keyboard-usable place selection (arrow keys, Enter, Escape, and Tab).
-- [x] Accessible labels for controls and a skip-to-content link.
-- [x] Appropriate focus states.
-- [x] Live announcements for suggestion loading/error/empty states and selection changes.
-
----
+- [ ] Deliberate caching/freshness behavior for recently viewed transport data.
+- [ ] Predictable update detection and activation.
 
 ## Maps
 
-Status: Deferred beyond MVP
+**Status: Deferred beyond MVP**
 
 - [ ] Interactive map.
-- [ ] Stops on map.
-- [ ] Line route visualization.
-- [ ] Journey leg visualization.
+- [ ] Stops and line geometry.
+- [ ] Journey-leg visualization.
 - [ ] Nearby transport.
-
-Notes:
-
-- Preserve coordinates/geometry in the data model when CTAN exposes them even before maps are implemented.
-
----
 
 ## Multi-leg routing
 
-Status: Deferred beyond MVP
+**Status: Deferred beyond MVP**
 
 - [ ] Transfer journeys.
 - [ ] Walking transfers.
 - [ ] Earliest-arrival routing.
-- [ ] GTFS-powered journey planning.
+- [ ] Mature GTFS routing engine integration.
 
----
+Do not implement a custom general-purpose routing engine.
 
 ## Authentication
 
-Status: Out of MVP
+**Status: Out of MVP**
 
 - [ ] Accounts.
-- [ ] Server-side favorites.
+- [ ] Server-side favorites/history.
 - [ ] User synchronization.
-
----
-
-## API
-
-Status: Liveness and place search implemented; other transport resources planned
-
-The versioned API exposes application liveness, population-centre search, direct journey search,
-and generated documentation. Liveness does not imply PostgreSQL or provider availability. See
-`docs/development.md` for local URLs. Place search and direct journey search use separate default
-per-process caches, not persistent storage; cold or expired-cache requests return a stable
-unavailability response if the relevant provider cannot supply usable data.
-
-Remaining potential resources:
-
-```text
-GET /api/v1/lines
-GET /api/v1/lines/{id}
-GET /api/v1/lines/{id}/schedule
-GET /api/v1/stops/{id}
-GET /api/v1/stops/{id}/departures
-GET /api/v1/alerts
-```
-
-These are provisional until CTAN discovery confirms which resources and mappings are reliable.
-
-Django Ninja/OpenAPI is the canonical endpoint-level API reference.

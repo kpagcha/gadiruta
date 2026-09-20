@@ -2,474 +2,121 @@
 
 ## Goal
 
-Build an initial web application inspired conceptually by Rome2Rio, focused specifically on public transport in the
-Cádiz area.
+Gadiruta is a Cádiz-area public transport web app inspired conceptually by Rome2Rio, but intentionally narrower for the first version.
 
-The first version will **not attempt full multi-leg route planning**.
+The MVP should make local public transport easier to use for:
 
-Instead, it should make the official CTAN transport data significantly easier and faster to use for:
+- finding direct public transport between two places;
+- checking scheduled departures for a chosen date and time;
+- browsing lines and stops;
+- seeing relevant service notices.
 
-- Finding direct public transport between two places.
-- Checking upcoming services and schedules.
-- Exploring transport lines.
-- Exploring stops / population centres.
-- Seeing relevant service notices.
-
-Primary upstream data source:
-
-https://api.ctan.es/doc/
-
-For Cádiz, use the Bahía de Cádiz consortium (`2`).
-
-The application must be structured so other transport sources and proper route planning can be added later.
-
----
+The first version does **not** calculate journeys requiring transfers.
 
 ## Product principles
 
-The app should feel:
+Gadiruta should feel simple, fast, mobile-first, friendly, spacious, and immediately understandable. Use [clicks.coffee](https://clicks.coffee/) as an aesthetic reference without copying it literally: strong typography, generous whitespace, restrained color, large controls, rounded surfaces, little visual clutter, and one obvious primary task per screen.
 
-- Extremely simple.
-- Fast.
-- Mobile-first.
-- Friendly rather than bureaucratic.
-- Visually spacious.
-- Immediately understandable without instructions.
-
-Use https://clicks.coffee/ as the main aesthetic reference.
-
-Do not copy it literally. Take inspiration from:
-
-- Strong typography.
-- Lots of whitespace.
-- Restrained use of color.
-- Large, comfortable form controls.
-- Rounded cards and controls.
-- Very little visual clutter.
-- Clear visual hierarchy.
-- One obvious primary task per screen.
-
-Avoid making it look like a traditional transit authority website or a dense dashboard.
-
----
+Avoid the look and information density of a traditional transit-authority website.
 
 ## Language
 
-The project itself is written in English:
+Project code, documentation, commits, and API field names are written in English.
 
-- Code.
-- Variables.
-- Comments.
-- Documentation.
-- Git commits.
-- API field names.
+The UI supports English and Spanish from the beginning. English is the source/fallback language. All user-facing strings go through the translation system; official place and operator names are preserved as provided by the data source.
 
-The UI must support:
+## MVP experience
 
-- English.
-- Spanish.
+### Home and journey search
 
-English is the source/fallback translation language.
+The primary interaction is an origin/destination search with:
 
-Spanish translations must be included from the beginning.
+- population-centre autocomplete;
+- easy origin/destination swap;
+- date selection;
+- optional departure-time filtering;
+- a clear Find transport action.
 
-Do not scatter user-facing text throughout React components.
+Search state should be represented in the URL so searches can be shared and restored.
 
-All UI strings should use the translation system.
+Population centres such as Cádiz, San Fernando, El Puerto de Santa María, and Jerez are the user-facing search unit. Users should not have to select an individual physical stop before searching.
 
-Detect the user's browser locale initially and provide a simple EN / ES language selector.
+### Direct journeys
 
----
+A direct journey is a single scheduled trip that serves an origin stop before a destination stop and operates on the requested date.
 
-# MVP experience
+For each result, show as much as the source data reliably supports, especially:
 
-## Home
+- departure and arrival time;
+- duration;
+- line and transport mode;
+- operator;
+- origin and destination stop;
+- relevant service notices.
 
-The primary interaction should dominate the page.
+Results must be easy to scan on a phone. If no direct service exists, make clear that routes requiring transfers are not supported yet rather than implying that no public-transport journey is possible.
 
-Conceptually:
+### Lines and stops
 
-```text
-Where are you going?
+The MVP should support browsing/searching lines and opening useful line details such as operator, directions, ordered stops, timetable, and relevant notices.
 
-[ From                         ]
-[ To                           ]
+Stop/location detail should expose serving lines, upcoming scheduled services where available, direction/destination, and relevant notices.
 
-          ⇅
+Maps are not required for the MVP, but coordinates and route geometry should be retained when available.
 
-[ Today / Date ] [ Time ]
+### Alerts
 
-[ Find transport ]
-```
+Service notices should appear in context. A notice affecting a line should be visible from that line and from journey results that use it where the relationship can be established reliably.
 
-Origin and destination should use autocomplete backed by known CTAN locations/stops rather than free-form arbitrary
-street addresses.
+### Favorites and recent searches
 
-Include an easy swap-origin/destination action.
+Authentication is not required for the MVP. Recent searches and favorites may be stored in `localStorage`, with a format that can later migrate to server-side accounts if accounts are introduced.
 
-Below the main search, optionally show:
+## Data product principles
 
-- Recent searches.
-- Favorite journeys.
-- A subtle link to browse lines.
+The frontend consumes Gadiruta's own API and domain model, never raw upstream payloads.
 
-Do not overload the home page.
+GTFS is the planned authoritative source for static transit-network and schedule data. CTAN REST remains only for capabilities GTFS does not provide reliably, such as population-centre metadata, alerts, or supplementary provider-specific information.
 
----
+Gadiruta should show data freshness where useful and must clearly state that it is an independent application using information from the Red de Consorcios de Transporte de Andalucía. Do not imply CTAN or Junta de Andalucía endorsement.
 
-## Direct journey search
+## Scope boundaries
 
-This is the main MVP feature.
+The MVP does not include:
 
-Given:
+- transfer routing;
+- arbitrary street-address routing;
+- walking or driving directions;
+- flights;
+- payments;
+- authentication/accounts;
+- push notifications;
+- complex map functionality;
+- full Andalusia coverage;
+- a custom general-purpose routing algorithm.
 
-- Origin.
-- Destination.
-- Date.
-- Optional departure time.
+## Roadmap
 
-Find direct public transport services between them using CTAN data.
+### Current product state
 
-No transfers should be calculated in this version.
+The backend/frontend foundation, bilingual population-centre search, date/time controls, and an initial direct-journey flow are implemented. The current direct-journey implementation uses CTAN REST and carries date/calendar limitations that are being retired rather than expanded.
 
-If there is no direct service, clearly communicate:
+### Immediate next milestone: GTFS migration
 
-```text
-No direct service found.
-Routes requiring transfers aren't supported yet.
-```
+Move static transit data and direct-journey lookup to CTAN's GTFS feed:
 
-Do not imply that no possible public transport journey exists.
+- import stops, routes, trips, stop times, calendars, calendar exceptions, agencies, and shapes;
+- associate user-facing places with GTFS stops;
+- answer direct-journey searches from local imported data;
+- validate coverage and identify any additional feeds needed for rail, tram, ferry, or other modes;
+- keep only justified CTAN REST dependencies.
 
----
+This migration is part of the MVP foundation, not future transfer routing.
 
-## Journey results
+### Post-MVP
 
-Each result should communicate as much of the following as the source data reliably allows:
+After the core first-version journey, line, stop, alert, localization, and responsive experience is polished, prioritize an installable PWA built from the existing React + Vite frontend. Later additions may include maps, nearby stops, fares, and richer favorites.
 
-- Departure time.
-- Arrival time.
-- Duration.
-- Transport mode.
-- Line.
-- Operator.
-- Origin stop/location.
-- Destination stop/location.
-- Relevant service warnings.
-- Whether the service runs on the selected date.
+### Later routing
 
-Make departure time and destination the strongest visual elements.
-
-Results should be easy to scan on a phone.
-
-Allow changing:
-
-- Date.
-- Time.
-- Direction.
-
-without forcing the user back to the home page.
-
-Search state should be represented in the URL so searches can be shared and bookmarked.
-
----
-
-## Lines
-
-Provide a searchable list of transport lines.
-
-Line detail should show:
-
-- Line number/name.
-- Operator.
-- Direction (s).
-- Stops in order.
-- Schedule/timetable.
-- Relevant alerts/notices.
-
-If geographic route geometry is readily available, retain it in the data model/API even if the MVP does not yet render a
-map.
-
----
-
-## Stops / locations
-
-Allow users to search for or open a stop/location.
-
-Where supported by CTAN, show:
-
-- Lines serving it.
-- Upcoming services.
-- Direction / destination.
-- Associated alerts.
-
----
-
-## Alerts
-
-CTAN service news/notices should be exposed where relevant.
-
-An alert concerning a line should appear on:
-
-- That line's page.
-- Journey results using that line.
-
-Avoid making users separately inspect an alerts page to discover that their journey is affected.
-
----
-
-## Favorites and recent searches
-
-No authentication is required for the MVP.
-
-Store in browser localStorage:
-
-- Recent origin/destination searches.
-- Favorite journeys.
-- Favorite lines/stops if implemented.
-
-Design the storage format so it can later be migrated to server-side user accounts.
-
----
-
-# Data and integration principles
-
-## Own API
-
-The frontend should use Gadiruta's own stable resource model rather than CTAN's raw API.
-
-Potential endpoint shape:
-
-```text
-GET /api/v1/places?q=
-GET /api/v1/journeys/direct
-GET /api/v1/lines
-GET /api/v1/lines/{id}
-GET /api/v1/lines/{id}/schedule
-GET /api/v1/stops/{id}
-GET /api/v1/stops/{id}/departures
-GET /api/v1/alerts
-```
-
-These endpoints are provisional. Do not implement them blindly.
-
-Inspect the actual CTAN API and determine which resources can be populated reliably.
-
-Gadiruta's generated Django Ninja/OpenAPI documentation is the canonical endpoint-level reference.
-
----
-
-## CTAN integration
-
-Before building substantial behavior around the upstream provider, determine:
-
-1. Relevant endpoints.
-2. Required query parameters.
-3. IDs and relationships between:
-    - consortium
-    - location / population centre
-    - stop
-    - line
-    - route/direction
-    - trip/service
-    - timetable/calendar
-    - operator
-4. Date/calendar representation.
-5. Transport modes.
-6. Missing/null/inconsistent data.
-7. Error responses.
-8. Whether requests support Spanish/English data.
-9. Refresh frequency.
-10. Any useful endpoints not initially obvious.
-
-Representative real responses should be captured as fixtures for tests.
-
-The application must tolerate:
-
-- Empty arrays.
-- Missing optional fields.
-- Upstream HTTP errors.
-- Timeouts.
-- Unexpected or inconsistent records.
-
-Never crash the frontend because CTAN returned incomplete data.
-
----
-
-## Caching
-
-CTAN should not need to be contacted repeatedly for data that rarely changes.
-
-Likely cache classes:
-
-### Long-lived
-
-- Stops.
-- Locations.
-- Lines.
-- Operators.
-
-### Medium-lived
-
-- Timetables.
-- Route structures.
-
-### Short-lived
-
-- Service alerts.
-- Dynamic/upcoming information where applicable.
-
-For the initial implementation, keep infrastructure simple.
-
-PostgreSQL may be used for persistent normalized/cached data.
-
-Do not introduce Celery solely for the MVP. Periodic synchronization can initially use a Django management command plus
-cron/scheduler if needed.
-
-Architect things so Redis or background jobs can be added later without redesigning the CTAN integration.
-
----
-
-## PostgreSQL
-
-Even though the MVP is mainly read-only, PostgreSQL can eventually hold:
-
-- Normalized CTAN entities.
-- Cached schedules.
-- Location aliases/search terms.
-- Synchronization metadata.
-- User favorites if accounts are introduced.
-- Additional transport providers.
-- Imported GTFS data.
-
-Keep upstream IDs separate from internal IDs.
-
-Do not make CTAN identifiers the application's primary keys by default.
-
----
-
-# Maps
-
-Maps are **not required for the first MVP**.
-
-Preserve coordinates and route geometry when CTAN provides them.
-
-A later version can add MapLibre/Leaflet-based visualization for:
-
-- Stops.
-- Line routes.
-- Journey legs.
-- Nearby transport.
-
-Do not let map implementation delay the core search experience.
-
----
-
-# Data attribution
-
-This is an independent application and must clearly identify its source.
-
-Include a small footer/data attribution based on:
-
-```text
-Information provided by the Portal de Datos Abiertos de la Red de Consorcios de Transporte de Andalucía.
-```
-
-Also communicate that the application is independent and is not an official CTAN/Junta de Andalucía service.
-
-Do not imply endorsement or affiliation.
-
-Where useful, display when transport information was last fetched/updated.
-
----
-
-# Explicitly outside MVP
-
-Do **not** initially implement:
-
-- Transfer route calculation.
-- Arbitrary street-address routing.
-- Walking directions.
-- Driving.
-- Flights.
-- Accounts/authentication.
-- Payments.
-- Native mobile apps (including React Native/Expo); revisit them only if genuinely native requirements remain after
-  the PWA route has been evaluated.
-- Push notifications.
-- Complex map functionality.
-- Full Andalusia coverage.
-- Custom routing algorithms.
-
-Focus on Cádiz and make the basic experience excellent first.
-
----
-
-# Future phases
-
-## Phase 2: post-MVP priorities
-
-After the first-version milestones are complete and the core workflow is polished, prioritize PWA support as the next
-major product step. Keep Gadiruta web-first by extending the existing React + Vite application so it can be installed
-and feel app-like on Android and iOS.
-
-PWA work should cover, as appropriate:
-
-- A web app manifest and platform-appropriate application icons.
-- A service worker and reliable offline app shell.
-- Sensible caching of recently viewed transport data, with clear freshness and stale-data behavior.
-- Predictable update detection, user messaging, and service-worker activation.
-
-The token-based dark theme is already implemented as a small cross-cutting frontend enhancement, with system-preference
-support and an explicit user toggle. It does not change the product's web-first direction or the priority of PWA as the
-next major post-MVP feature.
-
-After that PWA foundation, prioritize:
-
-- Interactive map.
-- Nearby stops.
-- Fares.
-- Better favorites.
-
-React Native/Expo remains a later option, not a parallel near-term frontend. Reconsider it only if requirements emerge
-that the web platform and PWA cannot satisfy well, such as genuinely native capabilities or constraints.
-
-## Phase 3
-
-GTFS-powered route calculation:
-
-```text
-A → bus → transfer → train → B
-```
-
-Consider a mature transit routing engine rather than building the algorithm from scratch.
-
-## Phase 4
-
-Additional datasets/providers:
-
-- Municipal transport not covered by CTAN.
-- Renfe or other rail data where necessary.
-- Ferry providers.
-- Other Andalusian transport consortia.
-- Walking routing/geocoding.
-
-At that point the product can evolve toward a true Cádiz-focused Rome2Rio-style journey planner.
-
----
-
-# First implementation milestone
-
-The first usable milestone should allow:
-
-1. Open the homepage.
-2. Search for Cádiz-area origin and destination locations.
-3. Choose today or another date.
-4. Find direct services between those locations.
-5. See upcoming departure options clearly.
-6. Open the corresponding line.
-7. Inspect its stops and timetable.
-8. Switch between English and Spanish.
-9. Use the application comfortably on both mobile and desktop.
-
-Before expanding the feature set, make this workflow polished, fast, and reliable.
+For journeys requiring transfers, use GTFS with a mature transit-routing engine such as OpenTripPlanner rather than building a routing engine in Gadiruta. Additional providers/feeds can be added when Cádiz coverage requires them.
