@@ -44,6 +44,8 @@ The current REST implementation has calendar/date limitations and should not be 
 
 - [x] Download and structurally validate the CTAN unified GTFS feed with a read-only inspection
   command and deterministic synthetic-feed tests.
+- [x] Persist versioned GTFS dataset metadata and normalized static transit tables, with active-
+  dataset protection, direct-journey query indexes, and future place-to-stop links.
 - [ ] Import agencies, stops, routes, trips, stop times, calendars, exceptions, and shapes.
 - [ ] Activate imports atomically and retain the previous valid dataset on failure.
 - [ ] Establish reliable `Place` ↔ GTFS stop associations.

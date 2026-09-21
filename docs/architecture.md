@@ -157,6 +157,11 @@ Exact table design belongs to implementation work, not this document.
 
 Imports should make dataset freshness and provenance inspectable.
 
+The initial persistence schema stores immutable GTFS datasets, agencies, stops, routes, trips,
+stop times, regular calendars, calendar exceptions, shapes, and future place-to-stop links.
+Dataset-scoped source IDs remain internal; a partial unique constraint permits exactly one active
+dataset.
+
 ## Frontend
 
 The frontend uses React, TypeScript, Vite, Tailwind CSS, React Router, TanStack Query, Lucide React, and react-i18next.
