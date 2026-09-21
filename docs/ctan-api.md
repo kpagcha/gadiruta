@@ -147,19 +147,29 @@ authoritative source for those modes if they remain part of the Cádiz MVP cover
 
 The current `stops.txt` observed for CTAN contains physical stop identity/name/coordinates but no municipality or `núcleo` field.
 
-Therefore GTFS alone does not currently replace the user-facing place hierarchy. Gadiruta still needs a reliable way to associate population centres with GTFS stops.
+GTFS alone therefore does not replace the user-facing place hierarchy. CTAN's documented
+`/Consorcios/2/paradas` catalogue does provide `idParada`, `idNucleo`, and physical-stop metadata.
+The 21 September 2026 capture verified that matching Bahía de Cádiz GTFS IDs use `2_<idParada>`;
+sampled matching records had the same names and coordinates. Gadiruta's `link_ctan_gtfs_places`
+command uses that exact ID relationship and never matches on labels.
 
-Possible sources, in preferred order of investigation:
+The live catalogue refresh on that date created 152 active-feed links covering 25 population centres.
+Some CTAN physical stops are absent from the unified GTFS snapshot, so no link is created unless the
+exact source ID is present in the active feed. Refresh the crosswalk after each GTFS import.
 
-1. a reliable CTAN REST stop-to-`núcleo` relationship;
-2. a deterministic crosswalk derived from CTAN identifiers if verified stable;
+For later supplementary feeds or providers, preferred association sources remain:
+
+1. an authoritative stop-to-place relationship;
+2. a deterministic source-ID crosswalk verified against coordinates and coverage;
 3. locally persisted place geometry/locality data and spatial association.
 
 Do not infer associations from display names alone.
 
 ### ID relationships
 
-GTFS IDs appear related to CTAN REST IDs in some cases, for example route IDs shaped like `2_13`, where `2` resembles the consortium and `13` a CTAN line ID. Treat this as a useful clue, not a guaranteed contract, until stability and coverage are verified.
+The stop relation `2_<idParada>` is now verified for the current Bahía de Cádiz snapshot and is used
+only by the managed crosswalk refresh. Other apparent patterns, such as route IDs shaped like `2_13`,
+remain useful clues rather than contracts until their stability and coverage are verified.
 
 ### Remaining coverage work
 

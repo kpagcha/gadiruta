@@ -1,0 +1,16 @@
+{
+  "paradas": [
+    {"idParada": "91", "idNucleo": "6", "idMunicipio": "4", "nombre": "512 Viviendas", "latitud": "36.530574", "longitud": "-6.196301"},
+    {"idParada": "155", "idNucleo": "21", "idMunicipio": "5", "nombre": "A-2078 Venta El Cepo", "latitud": "36.666621", "longitud": "-6.246744"},
+    {"idParada": "367", "idNucleo": "50", "idMunicipio": "17", "nombre": "A-314 Santuario La Oliva", "latitud": "36.2236631039067", "longitud": "-5.948859437472946"},
+    {"idParada": "373", "idNucleo": "51", "idMunicipio": "18", "nombre": "A-314 Venta El Loro", "latitud": "36.21148841915369", "longitud": "-5.939366590183568"},
+    {"idParada": "273", "idNucleo": "28", "idMunicipio": "11", "nombre": "A-480 Venta El Menuito", "latitud": "36.748809603470434", "longitud": "-6.380444169044495"},
+    {"idParada": "173", "idNucleo": "42", "idMunicipio": "6", "nombre": "Aeropuerto", "latitud": "36.75033683761318", "longitud": "-6.064587212548067"},
+    {"idParada": "73", "idNucleo": "3", "idMunicipio": "3", "nombre": "Águila-El Término", "latitud": "36.467022", "longitud": "-6.118394"},
+    {"idParada": "339", "idNucleo": "3", "idMunicipio": "3", "nombre": "Alameda Solano", "latitud": "36.425343", "longitud": "-6.144451"},
+    {"idParada": "363", "idNucleo": "50", "idMunicipio": "17", "nombre": "Apeadero de Autobuses", "latitud": "36.25572195327777", "longitud": "-5.967869025841711"},
+    {"idParada": "296", "idNucleo": "45", "idMunicipio": "16", "nombre": "Apeadero De Autobuses Conil", "latitud": "36.28192562206986", "longitud": "-6.081410050392151"},
+    {"idParada": "233", "idNucleo": "17", "idMunicipio": "7", "nombre": "Apeadero De Autobuses De Costa Ballena", "latitud": "36.69267585556875", "longitud": "-6.407162643357848"},
+    {"idParada": "329", "idNucleo": "2", "idMunicipio": "2", "nombre": "Ardila", "latitud": "36.45628171587166", "longitud": "-6.215954089676154"}
+  ]
+}

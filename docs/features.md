@@ -40,7 +40,7 @@ The current REST implementation has calendar/date limitations and should not be 
 
 ## GTFS migration
 
-**Status: GTFS import implemented; place-to-stop links and local direct-journey lookup next**
+**Status: GTFS data and CTAN place-to-stop links imported; local direct-journey lookup next**
 
 - [x] Download and structurally validate the CTAN unified GTFS feed with a read-only inspection
   command and deterministic synthetic-feed tests.
@@ -48,7 +48,7 @@ The current REST implementation has calendar/date limitations and should not be 
   dataset protection, direct-journey query indexes, and future place-to-stop links.
 - [x] Import agencies, stops, routes, trips, stop times, calendars, exceptions, and shapes.
 - [x] Activate imports atomically and retain the previous valid dataset on failure.
-- [ ] Establish reliable `Place` ↔ GTFS stop associations.
+- [x] Establish CTAN `Place` to GTFS-stop associations using the verified physical-stop ID crosswalk.
 - [ ] Reproduce existing direct-journey searches from local GTFS data.
 - [ ] Verify holiday/date handling through `calendar.txt` and `calendar_dates.txt`.
 - [ ] Verify overnight/past-midnight service handling.

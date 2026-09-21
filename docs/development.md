@@ -184,6 +184,17 @@ uv run --locked --env-file .env python manage.py import_gtfs --file path\to\gtfs
 The command is designed for a future cron or scheduler invocation; do not add Celery or Redis solely
 for this import.
 
+After a CTAN import, refresh the population-centre-to-physical-stop crosswalk used by future local
+direct-journey queries:
+
+```powershell
+uv run --locked --env-file .env python manage.py link_ctan_gtfs_places
+```
+
+The command reads CTAN's place, municipality, and physical-stop catalogues, then replaces links only
+for the active GTFS dataset. It refuses an empty crosswalk and leaves existing links unchanged in
+that case.
+
 ## API documentation
 
 Django Ninja/OpenAPI is the canonical endpoint reference.

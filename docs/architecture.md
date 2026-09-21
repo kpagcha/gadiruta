@@ -72,6 +72,11 @@ This lets users search by population centre while direct-journey logic works ove
 
 Current place discovery is based on CTAN `núcleos`/municipalities and persists canonical Gadiruta identities plus provider-reference crosswalks. Longer term, the place hierarchy may become fully local if a reliable authoritative locality dataset and stop-to-place mapping are available.
 
+For current CTAN Bahía de Cádiz data, the documented physical-stop catalogue provides each stop's
+`idNucleo`. The `link_ctan_gtfs_places` command refreshes canonical places and associates only
+stops whose verified GTFS ID is `2_<idParada>`. It must run after each newly activated CTAN GTFS
+dataset; it does not infer links from stop or place labels.
+
 Labels are presentation data, not identity. Upstream IDs must remain separate from Gadiruta primary/public identities.
 
 ## GTFS as the static transit source

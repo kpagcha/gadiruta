@@ -2,16 +2,18 @@
 
 Source: [CTAN Open Data API](https://api.ctan.es/doc/), Bahía de Cádiz consortium (`2`).
 Catalogue captures: 2026-09-05. Timetable captures: 2026-09-14.
+The physical-stop sample was captured on 2026-09-21.
 Gadiruta is an independent application, not an official CTAN service.
 
 `metadata.json` records each saved response's request URL, HTTP status, content type, and UTC
 retrieval time. JSON is reindented and Unicode escapes decoded for readability; original values
-and complete record lists are preserved.
+and complete record lists are preserved except where a fixture is explicitly labelled a sample.
 
 | Fixture | Observed response |
 | --- | --- |
 | `nucleos.json` | 37 population centres; HTTP 200. |
 | `municipios.json` | 12 municipalities; HTTP 200. |
+| `paradas_sample.json` | First 12 records of the physical-stop catalogue; HTTP 200. |
 | `nucleos_empty.json` | Empty centre list for unknown municipality `999999`; HTTP 200. |
 | `nucleo_invalid_id.json` | JSON error for centre ID `0`; HTTP 400. |
 | `consorcio_not_found.html` | HTML error from the documented consortium-detail path; HTTP 404. |

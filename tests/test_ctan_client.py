@@ -8,7 +8,7 @@ import pytest
 
 from transport.integrations.ctan.adapters import to_places
 from transport.integrations.ctan.client import CTANClient, CTANInvalidResponse, CTANUnavailable
-from transport.integrations.ctan.schemas import PopulationCentre
+from transport.integrations.ctan.schemas import PhysicalStop, PopulationCentre
 
 
 def read_centres(payload: object) -> list[PopulationCentre]:
@@ -17,6 +17,27 @@ def read_centres(payload: object) -> list[PopulationCentre]:
         transport=httpx.MockTransport(lambda request: httpx.Response(200, json=payload))
     ) as client:
         return client.list_population_centres()
+
+
+def read_physical_stops(payload: object) -> list[PhysicalStop]:
+    """Pass a synthetic stop-catalogue payload through the real client parser without HTTP."""
+    with CTANClient(
+        transport=httpx.MockTransport(lambda request: httpx.Response(200, json=payload))
+    ) as client:
+        return client.list_physical_stops()
+
+
+def test_saved_stop_sample_preserves_stop_and_population_centre_ids(
+    ctan_fixture_dir: Path,
+) -> None:
+    """Keep CTAN's authoritative physical-stop-to-centre association at the integration boundary."""
+    payload = json.loads((ctan_fixture_dir / "paradas_sample.json").read_text(encoding="utf-8"))
+    stops = read_physical_stops(payload)
+    assert [(stop.upstream_id, stop.population_centre_id) for stop in stops[:3]] == [
+        ("91", "6"),
+        ("155", "21"),
+        ("367", "50"),
+    ]
 
 
 def test_saved_catalogue_preserves_names_and_provider_relationships(ctan_fixture_dir: Path) -> None:

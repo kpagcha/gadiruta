@@ -60,6 +60,13 @@ class Municipality(CTANRecord):
     name: Label = Field(alias="datos")
 
 
+class PhysicalStop(CTANRecord):
+    """Map a physical CTAN stop to its optional population-centre identifier for GTFS linking."""
+
+    upstream_id: Identifier = Field(alias="idParada")
+    population_centre_id: OptionalIdentifier = Field(default=None, alias="idNucleo")
+
+
 def normalize_passage_time(value: object) -> str:
     """Accept CTAN's missing marker or a strict 24-hour timetable time."""
     if not isinstance(value, str):

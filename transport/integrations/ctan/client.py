@@ -12,6 +12,7 @@ from transport.integrations.ctan.schemas import (
     CTANRecord,
     LineMetadata,
     Municipality,
+    PhysicalStop,
     PopulationCentre,
     TimetablePlanner,
 )
@@ -70,6 +71,10 @@ class CTANClient:
     def list_municipalities(self) -> list[Municipality]:
         """Fetch municipality records used to resolve centre display labels."""
         return self._get_records("municipios/", "municipios", Municipality)
+
+    def list_physical_stops(self) -> list[PhysicalStop]:
+        """Fetch physical stops carrying CTAN's authoritative population-centre association."""
+        return self._get_records("paradas", "paradas", PhysicalStop)
 
     def list_direct_candidate_lines(
         self, origin_id: str, destination_id: str
