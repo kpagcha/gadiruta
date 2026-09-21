@@ -1,0 +1,4 @@
+trip_id,arrival_time,departure_time,stop_id,stop_sequence,pickup_type,drop_off_type
+cadiz-jerez-0800,08:00:00,08:00:00,cadiz-1,1,0,0
+cadiz-jerez-0800,08:05:00,08:05:00,cadiz-2,2,0,0
+cadiz-jerez-0800,09:00:00,09:00:00,jerez-1,3,0,0

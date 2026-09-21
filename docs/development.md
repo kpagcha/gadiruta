@@ -149,6 +149,22 @@ For GTFS work, prefer small representative fixture feeds that exercise importer/
 
 The GTFS importer should eventually be runnable as a management command so it can be tested manually and scheduled without adding Celery.
 
+## Inspect the CTAN GTFS feed
+
+The read-only inspection command downloads CTAN's current unified archive, validates its expected
+ZIP/CSV structure, and reports its checksum, table counts, agencies, route types, and service-date
+range. It does not write to PostgreSQL:
+
+```powershell
+uv run --locked --env-file .env python manage.py inspect_gtfs
+```
+
+For repeatable local inspection without a network request, pass a downloaded archive explicitly:
+
+```powershell
+uv run --locked --env-file .env python manage.py inspect_gtfs --file path\to\gtfs.zip
+```
+
 ## API documentation
 
 Django Ninja/OpenAPI is the canonical endpoint reference.

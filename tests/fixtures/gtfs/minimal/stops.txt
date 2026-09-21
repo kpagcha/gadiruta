@@ -1,0 +1,4 @@
+stop_id,stop_name,stop_lat,stop_lon
+cadiz-1,Cádiz,36.5297,-6.2921
+cadiz-2,Cádiz Central,36.5281,-6.2904
+jerez-1,Jerez,36.6850,-6.1261

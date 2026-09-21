@@ -1,0 +1,4 @@
+shape_id,shape_pt_lat,shape_pt_lon,shape_pt_sequence
+cadiz-jerez-shape,36.5297,-6.2921,1
+cadiz-jerez-shape,36.6000,-6.2100,2
+cadiz-jerez-shape,36.6850,-6.1261,3

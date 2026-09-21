@@ -110,6 +110,10 @@ A failed download or invalid import must leave the previous active dataset usabl
 
 The feed is expected to refresh regularly, probably daily. Download optimization with `ETag`, `Last-Modified`, or hashes can be added later.
 
+The current `inspect_gtfs` management command is a non-mutating first step: it downloads or reads a
+local archive, validates the required tables and fields, and reports a checksum and coverage summary.
+Persistent candidate import and atomic activation are the next implementation steps.
+
 ## Direct-journey lookup
 
 For a requested origin place, destination place, date, and optional departure time:

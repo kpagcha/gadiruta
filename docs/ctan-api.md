@@ -108,7 +108,26 @@ The feed contains the standard files needed by Gadiruta's static transit model:
 - `calendar_dates.txt`;
 - `shapes.txt`.
 
+The archive inspected on 21 September 2026 was a valid ZIP with those eight root-level files.
+Its `agency.txt` has non-standard leading whitespace before `agency_name`; GTFS readers should
+trim header-field whitespace while still rejecting duplicate or missing normalized names.
+`stops.txt` also contains unescaped double quotes inside some quoted stop names. A tolerant CSV
+reader preserves the observed field boundaries; validate parsed headers and row completeness rather
+than rejecting the whole otherwise usable archive for that upstream formatting defect.
+
 This feed should become authoritative for static transit-network and schedule data.
+
+### Verified unified-feed coverage
+
+The 21 September 2026 inspection reported:
+
+- 9 agencies, including Bahía de Cádiz;
+- 5,013 stops, 484 routes, 14,824 trips, and 296,863 stop times;
+- GTFS route type `3` (bus) on 482 routes and type `4` (ferry) on 2 routes;
+- service-calendar records and exceptions spanning 2017-01-01 through 2038-04-30.
+
+The unified archive has no rail or Trambahía route type in that snapshot. Gadiruta needs another
+authoritative source for those modes if they remain part of the Cádiz MVP coverage.
 
 ### Important GTFS advantages
 
@@ -137,17 +156,12 @@ Do not infer associations from display names alone.
 
 GTFS IDs appear related to CTAN REST IDs in some cases, for example route IDs shaped like `2_13`, where `2` resembles the consortium and `13` a CTAN line ID. Treat this as a useful clue, not a guaranteed contract, until stability and coverage are verified.
 
-### Coverage to verify
+### Remaining coverage work
 
-Before removing REST timetable code, confirm that the feed covers the modes Gadiruta needs, especially:
-
-- metropolitan buses;
-- maritime services;
-- Trambahía;
-- Cercanías;
-- Media Distancia or other rail currently surfaced through CTAN.
-
-If the CTAN feed is incomplete, add other authoritative GTFS feeds behind the same normalized domain rather than reintroducing CTAN-specific journey logic.
+The unified archive is sufficient to begin local bus/ferry import and direct-journey work. Before
+retiring the current REST timetable path, establish the place-to-stop crosswalk and identify an
+authoritative feed for rail/Trambahía if those modes remain in scope. Add supplementary feeds behind
+the same normalized domain rather than reintroducing CTAN-specific journey logic.
 
 ## Alerts and other remaining REST capabilities
 

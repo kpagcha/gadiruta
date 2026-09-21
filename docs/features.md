@@ -42,14 +42,16 @@ The current REST implementation has calendar/date limitations and should not be 
 
 **Status: Immediate next backend milestone**
 
-- [ ] Download and validate the CTAN unified GTFS feed.
+- [x] Download and structurally validate the CTAN unified GTFS feed with a read-only inspection
+  command and deterministic synthetic-feed tests.
 - [ ] Import agencies, stops, routes, trips, stop times, calendars, exceptions, and shapes.
 - [ ] Activate imports atomically and retain the previous valid dataset on failure.
 - [ ] Establish reliable `Place` ↔ GTFS stop associations.
 - [ ] Reproduce existing direct-journey searches from local GTFS data.
 - [ ] Verify holiday/date handling through `calendar.txt` and `calendar_dates.txt`.
 - [ ] Verify overnight/past-midnight service handling.
-- [ ] Audit mode/agency coverage, including rail, Trambahía, ferry, and buses.
+- [x] Audit the current unified feed's mode/agency coverage: it has the nine CTAN consortia and
+  bus/ferry routes, but no rail or Trambahía routes.
 - [ ] Identify additional feeds if CTAN GTFS coverage is incomplete.
 - [ ] Retire unnecessary REST timetable dependencies after validation.
 
