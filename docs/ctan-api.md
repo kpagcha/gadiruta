@@ -115,6 +115,11 @@ trim header-field whitespace while still rejecting duplicate or missing normaliz
 reader preserves the observed field boundaries; validate parsed headers and row completeness rather
 than rejecting the whole otherwise usable archive for that upstream formatting defect.
 
+A real import of that archive also found that `shape_pt_sequence` can be zero-based, so ordered shape
+sequences must accept zero. Some `trips.txt` rows (for example `6_116_V`) reference a `shape_id` not
+present in `shapes.txt`. Preserve the supplied identifier, but treat geometry as unavailable for
+those trips rather than rejecting their valid timetable data.
+
 This feed should become authoritative for static transit-network and schedule data.
 
 ### Verified unified-feed coverage

@@ -112,7 +112,11 @@ The feed is expected to refresh regularly, probably daily. Download optimization
 
 The current `inspect_gtfs` management command is a non-mutating first step: it downloads or reads a
 local archive, validates the required tables and fields, and reports a checksum and coverage summary.
-Persistent candidate import and atomic activation are the next implementation steps.
+The `import_gtfs` command follows it with relationship validation and a transactional persistent
+import. It stores a candidate as inactive, writes large stop-time and shape tables in batches, and
+only deactivates the previous dataset when the complete candidate is ready. A known archive checksum
+is an idempotent no-op. Schedule-critical references must be valid; a missing optional trip shape
+does not prevent timetable data from being imported.
 
 ## Direct-journey lookup
 

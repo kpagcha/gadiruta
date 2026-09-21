@@ -11,7 +11,7 @@ from zipfile import BadZipFile, ZipFile, ZipInfo
 
 MAX_UNCOMPRESSED_ARCHIVE_BYTES = 100 * 1024 * 1024
 REQUIRED_TABLE_COLUMNS: dict[str, tuple[str, ...]] = {
-    "agency.txt": ("agency_id", "agency_name"),
+    "agency.txt": ("agency_id", "agency_name", "agency_url", "agency_timezone"),
     "stops.txt": ("stop_id", "stop_name", "stop_lat", "stop_lon"),
     "routes.txt": ("route_id", "agency_id", "route_short_name", "route_long_name", "route_type"),
     "trips.txt": ("route_id", "service_id", "trip_id"),
@@ -81,12 +81,7 @@ def inspect_gtfs_archive(archive_bytes: bytes) -> GTFSFeedInspection:
     structure, expected columns, complete CSV rows, and core identifiers. It deliberately does
     not yet validate cross-table relationships; that belongs to the later persistent importer.
     """
-    if not archive_bytes:
-        raise GTFSFeedError("GTFS archive is empty.")
-    try:
-        archive = ZipFile(BytesIO(archive_bytes))
-    except BadZipFile as error:
-        raise GTFSFeedError("GTFS source did not contain a valid ZIP archive.") from error
+    archive = _open_gtfs_archive(archive_bytes)
     with archive:
         entries = _required_entries(archive)
         table_inspections: list[GTFSTableInspection] = []
@@ -120,6 +115,34 @@ def inspect_gtfs_archive(archive_bytes: bytes) -> GTFSFeedInspection:
         service_start_date=min(service_dates, default=None),
         service_end_date=max(service_dates, default=None),
     )
+
+
+def iter_gtfs_table_rows(archive_bytes: bytes, table_name: str) -> Iterator[dict[str, str]]:
+    """Yield validated rows from one named required table without retaining the full feed."""
+    required_columns = REQUIRED_TABLE_COLUMNS.get(table_name)
+    if required_columns is None:
+        raise GTFSFeedError(f"GTFS table {table_name} is not supported.")
+    archive = _open_gtfs_archive(archive_bytes)
+    with archive:
+        entries = _required_entries(archive)
+        for row in _iter_table_rows(
+            archive,
+            entries[table_name],
+            table_name,
+            required_columns,
+        ):
+            _validate_core_values(table_name, row)
+            yield row
+
+
+def _open_gtfs_archive(archive_bytes: bytes) -> ZipFile:
+    """Open non-empty archive bytes while normalizing malformed ZIP failures."""
+    if not archive_bytes:
+        raise GTFSFeedError("GTFS archive is empty.")
+    try:
+        return ZipFile(BytesIO(archive_bytes))
+    except BadZipFile as error:
+        raise GTFSFeedError("GTFS source did not contain a valid ZIP archive.") from error
 
 
 def _required_entries(archive: ZipFile) -> dict[str, ZipInfo]:

@@ -165,6 +165,25 @@ For repeatable local inspection without a network request, pass a downloaded arc
 uv run --locked --env-file .env python manage.py inspect_gtfs --file path\to\gtfs.zip
 ```
 
+## Import the CTAN GTFS feed
+
+The importer persists a new immutable dataset and atomically makes it active only after all required
+tables and schedule-critical references validate. It is safe to run repeatedly: an already imported
+archive checksum is reported as an idempotent no-op.
+
+```powershell
+uv run --locked --env-file .env python manage.py import_gtfs
+```
+
+Use a local archive to repeat a known import without a network request:
+
+```powershell
+uv run --locked --env-file .env python manage.py import_gtfs --file path\to\gtfs.zip
+```
+
+The command is designed for a future cron or scheduler invocation; do not add Celery or Redis solely
+for this import.
+
 ## API documentation
 
 Django Ninja/OpenAPI is the canonical endpoint reference.
